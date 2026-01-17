@@ -40,7 +40,7 @@ class Task1(BaseTask):
         self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
         self.label.setAlignment(Qt.AlignCenter)
         font = QFont()
-        font.setPointSize(16)
+        font.setPointSize(60)
         self.label.setFont(font)
 
         self.input_field = QLineEdit()
@@ -51,7 +51,7 @@ class Task1(BaseTask):
                 border: 2px solid #ccc;
                 border-radius: 8px;
                 padding: 8px;
-                font-size: 16px;
+                font-size:60px;
                 color: black;
             }
             QLineEdit:focus {
@@ -61,7 +61,7 @@ class Task1(BaseTask):
 
         self.result_label = QLabel("")
         self.result_label.setAlignment(Qt.AlignCenter)
-        self.result_label.setStyleSheet("font-size: 16px;")
+        self.result_label.setStyleSheet("font-size:60px;")
         self.result_label.hide()
 
         self.submit_btn = QPushButton("Проверить")
@@ -75,7 +75,7 @@ class Task1(BaseTask):
                 border: 1px solid #ccc;
                 border-radius: 6px;
                 padding: 8px 16px;
-                font-size: 14px;
+                font-size: 60px;
                 color: black;
             }
             QPushButton:hover {
@@ -131,7 +131,7 @@ class Task1(BaseTask):
                         border: 1px solid #ddd;
                         border-radius: 6px;
                         padding: 8px;
-                        font-size: 16px;
+                        font-size:60px;
                         color: black;
                     }
                     QPushButton:hover {
@@ -164,21 +164,25 @@ class Task1(BaseTask):
             user_input = float(self.input_field.text().replace(',', '.'))
             if user_input == self.correct_answer:
                 self.result_label.setText("Правильно!")
-                self.result_label.setStyleSheet("color: green; font-size: 16px;")
+                self.result_label.setStyleSheet("color: green; font-size:60px;")
             else:
                 self.result_label.setText(f"Неправильно. Правильный ответ: {self.correct_answer}")
-                self.result_label.setStyleSheet("color: red; font-size: 16px;")
+                self.result_label.setStyleSheet("color: red; font-size: 60px;")
         except ValueError:
             self.result_label.setText("Введите число.")
-            self.result_label.setStyleSheet("color: orange; font-size: 16px;")
+            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
 
         self.result_label.show()
         self.submit_btn.setEnabled(False)
         self.next_btn.setVisible(True)
 
     def reset_task(self):
-        self.generate_task()
         self.submit_btn.setEnabled(True)
+        self.next_btn.setVisible(False)
+        self.result_label.clear()
+        self.result_label.hide()
+        self.input_field.clear()
+        self.generate_task()
 
 class Task2(BaseTask):
     def __init__(self):
@@ -193,7 +197,7 @@ class Task2(BaseTask):
         self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
         self.label.setAlignment(Qt.AlignCenter)
         font = QFont()
-        font.setPointSize(16)
+        font.setPointSize(60)
         self.label.setFont(font)
 
         # Поля для ответа (числитель и знаменатель)
@@ -227,7 +231,7 @@ class Task2(BaseTask):
                 border: 2px solid #ccc;
                 border-radius: 8px;
                 padding: 8px;
-                font-size: 16px;
+                font-size:60px;
                 color: black;
                 min-width: 80px;
             }
@@ -241,7 +245,7 @@ class Task2(BaseTask):
                 border: 1px solid #ccc;
                 border-radius: 6px;
                 padding: 8px 16px;
-                font-size: 14px;
+                font-size: 60px;
                 color: black;
             }
             QPushButton:hover {
@@ -293,7 +297,7 @@ class Task2(BaseTask):
                         border: 1px solid #ddd;
                         border-radius: 6px;
                         padding: 8px;
-                        font-size: 16px;
+                        font-size: 60px;
                         color: black;
                     }
                     QPushButton:hover {
@@ -333,7 +337,7 @@ class Task2(BaseTask):
         # Формирование строки задания
         task_html = f"""
         <div style="text-align: center;">
-        <span style="font-size: 18px;">
+        <span style="font-size: 60px;">
         (<sup>{a}</sup>&frasl;<sub>{b}</sub> &minus; <sup>{c}</sup>&frasl;<sub>{d}</sub>) &divide; <sup>{e}</sup>&frasl;<sub>{f}</sub>
         </span>
         </div>
@@ -355,7 +359,7 @@ class Task2(BaseTask):
             # Проверка знаменателя
             if den == 0:
                 self.result_label.setText("Знаменатель не может быть 0.")
-                self.result_label.setStyleSheet("color: orange; font-size: 16px;")
+                self.result_label.setStyleSheet("color: orange; font-size: 60px;")
                 self.result_label.show()
                 return
 
@@ -370,24 +374,29 @@ class Task2(BaseTask):
 
             if user_fraction == correct_result:
                 self.result_label.setText("Правильно!")
-                self.result_label.setStyleSheet("color: green; font-size: 16px;")
+                self.result_label.setStyleSheet("color: green; font-size: 60px;")
             else:
                 self.result_label.setText(
                     f"Неправильно. Правильный ответ: {correct_result.numerator}/{correct_result.denominator}"
                 )
-                self.result_label.setStyleSheet("color: red; font-size: 16px;")
+                self.result_label.setStyleSheet("color: red; font-size: 60px;")
 
         except ValueError:
             self.result_label.setText("Введите числа в оба поля.")
-            self.result_label.setStyleSheet("color: orange; font-size: 16px;")
+            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
 
         self.result_label.show()
         self.submit_btn.setEnabled(False)
         self.next_btn.setVisible(True)
 
     def reset_task(self):
-        self.generate_task()
         self.submit_btn.setEnabled(True)
+        self.next_btn.setVisible(False)
+        self.result_label.clear()
+        self.result_label.hide()
+        self.answer_num.clear()
+        self.answer_den.clear()
+        self.generate_task()
 
 class Task3(BaseTask):
     def __init__(self):
@@ -395,7 +404,7 @@ class Task3(BaseTask):
         self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
         self.label.setAlignment(Qt.AlignCenter)
         font = QFont()
-        font.setPointSize(16)
+        font.setPointSize(60)
         self.label.setFont(font)
 
         self.input_field = QLineEdit()
@@ -408,7 +417,7 @@ class Task3(BaseTask):
                 border: 2px solid #ccc;
                 border-radius: 8px;
                 padding: 8px;
-                font-size: 16px;
+                font-size: 60px;
                 color: black;
             }
             QLineEdit:focus {
@@ -418,7 +427,7 @@ class Task3(BaseTask):
 
         self.result_label = QLabel("")
         self.result_label.setAlignment(Qt.AlignCenter)
-        self.result_label.setStyleSheet("font-size: 16px;")
+        self.result_label.setStyleSheet("font-size:60px;")
         self.result_label.hide()
 
         self.submit_btn = QPushButton("Проверить")
@@ -432,7 +441,7 @@ class Task3(BaseTask):
                 border: 1px solid #ccc;
                 border-radius: 6px;
                 padding: 8px 16px;
-                font-size: 14px;
+                font-size: 60px;
                 color: black;
             }
             QPushButton:hover {
@@ -487,7 +496,7 @@ class Task3(BaseTask):
                         border: 1px solid #ddd;
                         border-radius: 6px;
                         padding: 8px;
-                        font-size: 16px;
+                        font-size:60px;
                         color: black;
                     }
                     QPushButton:hover {
@@ -523,21 +532,25 @@ class Task3(BaseTask):
             user_input = float(self.input_field.text().replace(',', '.'))
             if abs(user_input - self.correct_answer) < 1e-6:  # Проверка с допуском
                 self.result_label.setText("Правильно!")
-                self.result_label.setStyleSheet("color: green; font-size: 16px;")
+                self.result_label.setStyleSheet("color: green; font-size: 60px;")
             else:
                 self.result_label.setText(f"Неправильно. Правильный ответ: {round(self.correct_answer, 2)}")
-                self.result_label.setStyleSheet("color: red; font-size: 16px;")
+                self.result_label.setStyleSheet("color: red; font-size: 60px;")
         except ValueError:
             self.result_label.setText("Введите число.")
-            self.result_label.setStyleSheet("color: orange; font-size: 16px;")
+            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
 
         self.result_label.show()
         self.submit_btn.setEnabled(False)
         self.next_btn.setVisible(True)
 
     def reset_task(self):
-        self.generate_task()
         self.submit_btn.setEnabled(True)
+        self.next_btn.setVisible(False)
+        self.result_label.clear()
+        self.result_label.hide()
+        self.input_field.clear()
+        self.generate_task()
 
 class Task4(BaseTask):
     def __init__(self):
@@ -545,7 +558,7 @@ class Task4(BaseTask):
         self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
         self.label.setAlignment(Qt.AlignCenter)
         font = QFont()
-        font.setPointSize(16)
+        font.setPointSize(60)
         self.label.setFont(font)
 
         self.input_field = QLineEdit()
@@ -558,7 +571,7 @@ class Task4(BaseTask):
                 border: 2px solid #ccc;
                 border-radius: 8px;
                 padding: 8px;
-                font-size: 16px;
+                font-size: 60px;
                 color: black;
             }
             QLineEdit:focus {
@@ -568,7 +581,7 @@ class Task4(BaseTask):
 
         self.result_label = QLabel("")
         self.result_label.setAlignment(Qt.AlignCenter)
-        self.result_label.setStyleSheet("font-size: 16px;")
+        self.result_label.setStyleSheet("font-size:60px;")
         self.result_label.hide()
 
         self.submit_btn = QPushButton("Проверить")
@@ -582,7 +595,7 @@ class Task4(BaseTask):
                 border: 1px solid #ccc;
                 border-radius: 6px;
                 padding: 8px 16px;
-                font-size: 14px;
+                font-size: 60px;
                 color: black;
             }
             QPushButton:hover {
@@ -637,7 +650,7 @@ class Task4(BaseTask):
                         border: 1px solid #ddd;
                         border-radius: 6px;
                         padding: 8px;
-                        font-size: 16px;
+                        font-size:60px;
                         color: black;
                     }
                     QPushButton:hover {
@@ -674,21 +687,25 @@ class Task4(BaseTask):
             user_input = float(self.input_field.text().replace(',', '.'))
             if user_input == self.correct_answer:
                 self.result_label.setText("Правильно!")
-                self.result_label.setStyleSheet("color: green; font-size: 16px;")
+                self.result_label.setStyleSheet("color: green; font-size:60px;")
             else:
                 self.result_label.setText(f"Неправильно. Правильный ответ: {self.correct_answer}")
-                self.result_label.setStyleSheet("color: red; font-size: 16px;")
+                self.result_label.setStyleSheet("color: red; font-size: 60px;")
         except ValueError:
             self.result_label.setText("Введите число.")
-            self.result_label.setStyleSheet("color: orange; font-size: 16px;")
+            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
 
         self.result_label.show()
         self.submit_btn.setEnabled(False)
         self.next_btn.setVisible(True)
 
     def reset_task(self):
-        self.generate_task()
         self.submit_btn.setEnabled(True)
+        self.next_btn.setVisible(False)
+        self.result_label.clear()
+        self.result_label.hide()
+        self.input_field.clear()
+        self.generate_task()
 
 class Task5(BaseTask):
     def __init__(self):
@@ -696,7 +713,7 @@ class Task5(BaseTask):
         self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
         self.label.setAlignment(Qt.AlignCenter)
         font = QFont()
-        font.setPointSize(16)
+        font.setPointSize(60)
         self.label.setFont(font)
 
         self.input_field = QLineEdit()
@@ -709,7 +726,7 @@ class Task5(BaseTask):
                 border: 2px solid #ccc;
                 border-radius: 8px;
                 padding: 8px;
-                font-size: 16px;
+                font-size:60px;
                 color: black;
             }
             QLineEdit:focus {
@@ -719,7 +736,7 @@ class Task5(BaseTask):
 
         self.result_label = QLabel("")
         self.result_label.setAlignment(Qt.AlignCenter)
-        self.result_label.setStyleSheet("font-size: 16px;")
+        self.result_label.setStyleSheet("font-size: 60px;")
         self.result_label.hide()
 
         self.submit_btn = QPushButton("Проверить")
@@ -733,7 +750,7 @@ class Task5(BaseTask):
                 border: 1px solid #ccc;
                 border-radius: 6px;
                 padding: 8px 16px;
-                font-size: 14px;
+                font-size: 60px;
                 color: black;
             }
             QPushButton:hover {
@@ -789,7 +806,7 @@ class Task5(BaseTask):
                         border: 1px solid #ddd;
                         border-radius: 6px;
                         padding: 8px;
-                        font-size: 16px;
+                        font-size: 60px;
                         color: black;
                     }
                     QPushButton:hover {
@@ -844,21 +861,1037 @@ class Task5(BaseTask):
             user_input = float(self.input_field.text().replace(',', '.'))
             if abs(user_input - self.correct_answer) < 1e-9:
                 self.result_label.setText("Правильно!")
-                self.result_label.setStyleSheet("color: green; font-size: 16px;")
+                self.result_label.setStyleSheet("color: green; font-size:60px;")
             else:
                 self.result_label.setText(f"Неправильно. Правильный ответ: {self.correct_answer:.1f}")
-                self.result_label.setStyleSheet("color: red; font-size: 16px;")
+                self.result_label.setStyleSheet("color: red; font-size: 60px;")
         except ValueError:
             self.result_label.setText("Введите число.")
-            self.result_label.setStyleSheet("color: orange; font-size: 16px;")
+            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
 
         self.result_label.show()
         self.submit_btn.setEnabled(False)
         self.next_btn.setVisible(True)
 
     def reset_task(self):
-        self.generate_task()
         self.submit_btn.setEnabled(True)
+        self.next_btn.setVisible(False)
+        self.result_label.clear()
+        self.result_label.hide()
+        self.input_field.clear()
+        self.generate_task()
+
+class Task6(BaseTask):
+    def __init__(self):
+        super().__init__()
+
+        # Центральный фрейм
+        self.central_frame = QFrame()
+        central_layout = QVBoxLayout()
+        central_layout.setAlignment(Qt.AlignCenter)
+
+        # Метка с длинным текстом задачи
+        self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
+        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setWordWrap(True)  # Разрешить перенос строк
+        font = QFont()
+        font.setPointSize(60)
+        self.label.setFont(font)
+
+        # Поле ввода ответа
+        self.input_field = QLineEdit()
+        self.input_field.setAlignment(Qt.AlignCenter)
+
+        # Стиль поля ввода
+        self.input_field.setStyleSheet("""
+            QLineEdit {
+                background-color: white;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+                padding: 8px;
+                font-size: 60px;
+                color: black;
+            }
+            QLineEdit:focus {
+                border: 2px solid #007acc;
+            }
+        """)
+
+        # Результат
+        self.result_label = QLabel("")
+        self.result_label.setAlignment(Qt.AlignCenter)
+        self.result_label.setStyleSheet("font-size: 60px;")
+        self.result_label.hide()
+
+        # Кнопки
+        self.submit_btn = QPushButton("Проверить")
+        self.next_btn = QPushButton("Продолжить")
+        self.next_btn.setVisible(False)
+
+        button_style = """
+            QPushButton {
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: 60px;
+                color: black;
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
+            }
+            QPushButton:pressed {
+                background-color: #d0d0d0;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #888888;
+            }
+        """
+        self.submit_btn.setStyleSheet(button_style)
+        self.next_btn.setStyleSheet(button_style)
+
+        # Виртуальная клавиатура
+        self.keyboard_layout = QGridLayout()
+        self.setup_virtual_keyboard()
+
+        # Компоновка
+        central_layout.addWidget(self.label)
+        central_layout.addSpacing(20)
+        central_layout.addWidget(self.input_field)
+        central_layout.addLayout(self.keyboard_layout)
+        central_layout.addWidget(self.submit_btn)
+        central_layout.addWidget(self.result_label)
+        central_layout.addWidget(self.next_btn)
+
+        self.central_frame.setLayout(central_layout)
+        self.layout.addWidget(self.central_frame)
+
+        self.submit_btn.clicked.connect(self.check_answer)
+        self.next_btn.clicked.connect(self.reset_task)
+
+    def setup_virtual_keyboard(self):
+        buttons = [
+            ['1', '2', '3'],
+            ['4', '5', '6'],
+            ['7', '8', '9'],
+            ['0', '-', ',']
+        ]
+        for i, row in enumerate(buttons):
+            for j, char in enumerate(row):
+                btn = QPushButton(char)
+                btn.clicked.connect(lambda _, s=char: self.append_to_input(s))
+                btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: 60px;
+                        color: black;
+                    }
+                    QPushButton:hover {
+                        background-color: #f5f5f5;
+                    }
+                """)
+                self.keyboard_layout.addWidget(btn, i, j)
+
+    def append_to_input(self, char):
+        current_text = self.input_field.text()
+        self.input_field.setText(current_text + char)
+
+    def generate_task(self):
+        # Генерация чисел
+        a = random.randint(10, 99) * 10  # Трёхзначное, кратное 10
+        b = random.randint(2, 8)         # Время в первый день
+        c = random.choice([5, 10, 15, 20, 25])  # Кратное 5
+
+        self.a, self.b, self.c = a, b, c
+
+        # Скорость в первый день
+        speed1 = a / b
+
+        # Скорость на обратном пути
+        speed2 = speed1 - c
+
+        # Проверяем, что t2 < 10, t2 != 0, и имеет формат X.5 (одна цифра после запятой, Y = 5)
+        while True:
+            if speed2 == 0:
+                # Перегенерация, чтобы избежать деления на 0
+                a = random.randint(10, 99) * 10
+                b = random.randint(2, 8)
+                c = random.choice([5, 10, 15, 20, 25])
+                self.a, self.b, self.c = a, b, c
+                speed1 = a / b
+                speed2 = speed1 - c
+                continue
+
+            t2 = a / speed2
+            if t2 >= 10:
+                # Перегенерация
+                a = random.randint(10, 99) * 10
+                b = random.randint(2, 8)
+                speed1 = a / b
+                speed2 = speed1 - c
+                continue
+
+            rounded_t2 = round(t2, 1)
+            if abs(t2 - rounded_t2) < 1e-9:
+                decimal_part = (rounded_t2 * 10) % 10
+                if decimal_part == 5:
+                    self.correct_answer = rounded_t2
+                    break
+
+            # Иначе снова генерируем
+            a = random.randint(10, 99) * 10
+            b = random.randint(2, 8)
+            c = random.choice([5, 10, 15, 20, 25])
+            self.a, self.b, self.c = a, b, c
+            speed1 = a / b
+            speed2 = speed1 - c
+
+        # Формируем текст задачи
+        task_text = (
+            f"Автомобиль проехал с постоянной скоростью {a} км "
+            f"от города А до города Б за {b} ч. На следующий день "
+            f"автомобиль проехал тот же путь обратно со скоростью "
+            f"на {c} км/ч меньше, чем в первый день. "
+            f"Сколько часов потребовалось автомобилю на обратный путь?"
+        )
+
+        self.label.setText(task_text)
+        self.input_field.clear()
+        self.result_label.clear()
+        self.result_label.hide()
+        self.next_btn.setVisible(False)
+
+    def check_answer(self):
+        try:
+            user_input = float(self.input_field.text().replace(',', '.'))
+            if abs(user_input - self.correct_answer) < 1e-9:
+                self.result_label.setText("Правильно!")
+                self.result_label.setStyleSheet("color: green; font-size:60px;")
+            else:
+                self.result_label.setText(f"Неправильно. Правильный ответ: {self.correct_answer:.1f}")
+                self.result_label.setStyleSheet("color: red; font-size: 60px;")
+        except ValueError:
+            self.result_label.setText("Введите число.")
+            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
+
+        self.result_label.show()
+        self.submit_btn.setEnabled(False)
+        self.next_btn.setVisible(True)
+
+    def reset_task(self):
+        self.submit_btn.setEnabled(True)
+        self.next_btn.setVisible(False)
+        self.result_label.clear()
+        self.result_label.hide()
+        self.input_field.clear()
+        self.generate_task()
+
+class Task7(BaseTask):
+    def __init__(self):
+        super().__init__()
+
+        # Центральный фрейм
+        self.central_frame = QFrame()
+        central_layout = QVBoxLayout()
+        central_layout.setAlignment(Qt.AlignCenter)
+
+        # Заголовок
+        self.label = QLabel("")
+        self.label.setAlignment(Qt.AlignCenter)
+        font = QFont()
+        font.setPointSize(60)
+        self.label.setFont(font)
+
+        # Отображение примера в виде дробей
+        self.task_display = QLabel("")
+        self.task_display.setAlignment(Qt.AlignCenter)
+        self.task_display.setStyleSheet("font-size: 60px;")
+
+        # Поле ввода ответа в формате -1/N
+        self.input_field = QLineEdit()
+        self.input_field.setAlignment(Qt.AlignCenter)
+        self.input_field.setPlaceholderText("Несократимая обыкновенная дробь")
+
+        # Стиль поля ввода
+        line_edit_style = """
+            QLineEdit {
+                background-color: white;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+                padding: 8px;
+                font-size: 40px;
+                color: black;
+                width: 200px;
+                height: 60px;
+            }
+            QLineEdit:focus {
+                border: 2px solid #007acc;
+            }
+        """
+        self.input_field.setStyleSheet(line_edit_style)
+
+        # Виртуальная клавиатура (заменяем "," на "/")
+        keyboard_layout = QGridLayout()
+        buttons = [
+            ['1', '2', '3'],
+            ['4', '5', '6'],
+            ['7', '8', '9'],
+            ['0', '-', '/']  # Заменяем запятую на "/"
+        ]
+        for i, row in enumerate(buttons):
+            for j, char in enumerate(row):
+                btn = QPushButton(char)
+                btn.clicked.connect(lambda _, s=char: self.append_to_input(s))
+                btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: 60px;
+                        color: black;
+                    }
+                    QPushButton:hover {
+                        background-color: #f5f5f5;
+                    }
+                """)
+                keyboard_layout.addWidget(btn, i, j)
+
+        # Кнопки
+        self.submit_btn = QPushButton("Проверить")
+        self.next_btn = QPushButton("Продолжить")
+        self.next_btn.setVisible(False)
+
+        button_style = """
+            QPushButton {
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: 60px;
+                color: black;
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
+            }
+            QPushButton:pressed {
+                background-color: #d0d0d0;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #888888;
+            }
+        """
+        self.submit_btn.setStyleSheet(button_style)
+        self.next_btn.setStyleSheet(button_style)
+
+        # Результат
+        self.result_label = QLabel("")
+        self.result_label.setAlignment(Qt.AlignCenter)
+        self.result_label.setStyleSheet("font-size: 60px;")
+        self.result_label.hide()
+
+        # Компоновка
+        central_layout.addWidget(self.label)
+        central_layout.addWidget(self.task_display)
+        central_layout.addSpacing(20)
+        central_layout.addWidget(self.input_field)
+        central_layout.addLayout(keyboard_layout)
+        central_layout.addWidget(self.submit_btn)
+        central_layout.addWidget(self.result_label)
+        central_layout.addWidget(self.next_btn)
+
+        self.central_frame.setLayout(central_layout)
+        self.layout.addWidget(self.central_frame)
+
+        self.submit_btn.clicked.connect(self.check_answer)
+        self.next_btn.clicked.connect(self.reset_task)
+
+    def append_to_input(self, char):
+        current_text = self.input_field.text()
+        self.input_field.setText(current_text + char)
+
+    def generate_task(self):
+        # Генерация чисел
+        # б: дробь, числитель < знаменателя, знаменатель от 3 до 8
+        den_b = random.randint(3, 8)
+        num_b = random.randint(1, den_b - 1)
+        frac_b = Fraction(num_b, den_b)
+
+        # в: дробь, числитель может быть >= знаменателя, но не кратен ему
+        den_v = random.randint(4, 12)
+        num_v = random.randint(1, den_v + 2)
+        while num_v % den_v == 0:
+            num_v = random.randint(1, den_v + 2)
+        frac_v = Fraction(num_v, den_v)
+
+        # г: аналогично в, но НЕ совпадает с в
+        while True:
+            den_g = random.randint(4, 12)
+            num_g = random.randint(1, den_g + 2)
+            while num_g % den_g == 0:
+                num_g = random.randint(1, den_g + 2)
+            frac_g = Fraction(num_g, den_g)
+            if frac_g != frac_v:
+                break  # Успешно сгенерирована дробь, отличающаяся от frac_v
+
+        # д: числитель от 3*den до 13*den, знаменатель от 3 до 7
+        den_d = random.randint(3, 7)
+        num_d = random.randint(3 * den_d, 13 * den_d)
+        while num_d % den_d == 0:
+            num_d = random.randint(3 * den_d, 13 * den_d)
+        frac_d = Fraction(num_d, den_d)
+
+        # е: целое число от 2 до 9
+        e = random.randint(2, 9)
+
+        # Вычисляем: (1 + frac_b) * (frac_v + frac_g) - frac_d / e
+        mixed_num = 1 + frac_b
+        sum_fractions = frac_v + frac_g
+        div_frac = frac_d / e
+
+        result = mixed_num * sum_fractions - div_frac
+
+        # Проверяем, что результат — отрицательная дробь вида -1/N
+        while not (result < 0 and result.numerator == -1 and 2 <= result.denominator <= 9):
+            # Перегенерация
+            den_b = random.randint(3, 8)
+            num_b = random.randint(1, den_b - 1)
+            frac_b = Fraction(num_b, den_b)
+
+            den_v = random.randint(4, 12)
+            num_v = random.randint(1, den_v + 2)
+            while num_v % den_v == 0:
+                num_v = random.randint(1, den_v + 2)
+            frac_v = Fraction(num_v, den_v)
+
+            # г: аналогично в, но НЕ совпадает с в
+            while True:
+                den_g = random.randint(4, 12)
+                num_g = random.randint(1, den_g + 2)
+                while num_g % den_g == 0:
+                    num_g = random.randint(1, den_g + 2)
+                frac_g = Fraction(num_g, den_g)
+                if frac_g != frac_v:
+                    break
+
+            den_d = random.randint(3, 7)
+            num_d = random.randint(3 * den_d, 13 * den_d)
+            while num_d % den_d == 0:
+                num_d = random.randint(3 * den_d, 13 * den_d)
+            frac_d = Fraction(num_d, den_d)
+
+            e = random.randint(2, 9)
+
+            mixed_num = 1 + frac_b
+            sum_fractions = frac_v + frac_g
+            div_frac = frac_d / e
+            result = mixed_num * sum_fractions - div_frac
+
+        self.frac_b = frac_b
+        self.frac_v = frac_v
+        self.frac_g = frac_g
+        self.frac_d = frac_d
+        self.e = e
+        self.correct_answer = result
+
+        # Формируем HTML-строку для отображения
+        task_html = f"""
+        <div style="text-align: center;">
+        <span style="font-size: 60px;">
+        1<sup>{frac_b.numerator}</sup>&frasl;<sub>{frac_b.denominator}</sub> &times; (<sup>{frac_v.numerator}</sup>&frasl;<sub>{frac_v.denominator}</sub> + <sup>{frac_g.numerator}</sup>&frasl;<sub>{frac_g.denominator}</sub>) &minus; <sup>{frac_d.numerator}</sup>&frasl;<sub>{frac_d.denominator}</sub> &divide; {e}
+        </span>
+        </div>
+        """
+
+        self.label.setText(task_html)
+
+        # Очистка
+        self.input_field.clear()
+        self.result_label.clear()
+        self.result_label.hide()
+        self.next_btn.setVisible(False)
+
+
+    def check_answer(self):
+        try:
+            user_input_str = self.input_field.text().strip()
+            if '/' not in user_input_str:
+                raise ValueError("Введите дробь в формате -1/N")
+            parts = user_input_str.split('/')
+            if len(parts) != 2:
+                raise ValueError("Введите дробь в формате -1/N")
+            num = int(parts[0])
+            den = int(parts[1])
+            user_frac = Fraction(num, den)
+        except ValueError:
+            self.result_label.setText("Введите дробь в формате -1/N")
+            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
+            self.result_label.show()
+            return
+
+        if user_frac == self.correct_answer:
+            self.result_label.setText("Правильно!")
+            self.result_label.setStyleSheet("color: green; font-size: 60px;")
+        else:
+            self.result_label.setText(f"Неправильно. Правильный ответ: {self.correct_answer}")
+            self.result_label.setStyleSheet("color: red; font-size: 60px;")
+
+        self.result_label.show()
+        self.submit_btn.setEnabled(False)
+        self.next_btn.setVisible(True)
+
+    def reset_task(self):
+        self.submit_btn.setEnabled(True)
+        self.next_btn.setVisible(False)
+        self.result_label.clear()
+        self.result_label.hide()
+        self.input_field.clear()
+        self.generate_task()
+class Task8(BaseTask):
+    def __init__(self):
+        super().__init__()
+
+        # Центральный фрейм
+        self.central_frame = QFrame()
+        central_layout = QVBoxLayout()
+        central_layout.setAlignment(Qt.AlignCenter)
+
+        # Метка с длинным текстом задачи
+        self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
+        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setWordWrap(True)  # Разрешить перенос строк
+        font = QFont()
+        font.setPointSize(60)
+        self.label.setFont(font)
+
+        # Поле ввода ответа
+        self.input_field = QLineEdit()
+        self.input_field.setAlignment(Qt.AlignCenter)
+
+        # Стиль поля ввода
+        self.input_field.setStyleSheet("""
+            QLineEdit {
+                background-color: white;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+                padding: 8px;
+                font-size: 60px;
+                color: black;
+            }
+            QLineEdit:focus {
+                border: 2px solid #007acc;
+            }
+        """)
+
+        # Результат
+        self.result_label = QLabel("")
+        self.result_label.setAlignment(Qt.AlignCenter)
+        self.result_label.setStyleSheet("font-size: 60px;")
+        self.result_label.hide()
+
+        # Кнопки
+        self.submit_btn = QPushButton("Проверить")
+        self.next_btn = QPushButton("Продолжить")
+        self.next_btn.setVisible(False)
+
+        button_style = """
+            QPushButton {
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: 60px;
+                color: black;
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
+            }
+            QPushButton:pressed {
+                background-color: #d0d0d0;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #888888;
+            }
+        """
+        self.submit_btn.setStyleSheet(button_style)
+        self.next_btn.setStyleSheet(button_style)
+
+        # Виртуальная клавиатура
+        self.keyboard_layout = QGridLayout()
+        self.setup_virtual_keyboard()
+
+        # Компоновка
+        central_layout.addWidget(self.label)
+        central_layout.addSpacing(20)
+        central_layout.addWidget(self.input_field)
+        central_layout.addLayout(self.keyboard_layout)
+        central_layout.addWidget(self.submit_btn)
+        central_layout.addWidget(self.result_label)
+        central_layout.addWidget(self.next_btn)
+
+        self.central_frame.setLayout(central_layout)
+        self.layout.addWidget(self.central_frame)
+
+        self.submit_btn.clicked.connect(self.check_answer)
+        self.next_btn.clicked.connect(self.reset_task)
+
+    def setup_virtual_keyboard(self):
+        buttons = [
+            ['1', '2', '3'],
+            ['4', '5', '6'],
+            ['7', '8', '9'],
+            ['0', '-', ',']
+        ]
+        for i, row in enumerate(buttons):
+            for j, char in enumerate(row):
+                btn = QPushButton(char)
+                btn.clicked.connect(lambda _, s=char: self.append_to_input(s))
+                btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: 60px;
+                        color: black;
+                    }
+                    QPushButton:hover {
+                        background-color: #f5f5f5;
+                    }
+                """)
+                self.keyboard_layout.addWidget(btn, i, j)
+
+    def append_to_input(self, char):
+        current_text = self.input_field.text()
+        self.input_field.setText(current_text + char)
+
+    def generate_task(self):
+        # Генерация чисел
+        b = random.randint(2, 6)  # Отношение этажей к квартирам на этаже
+        y = random.randint(6, 25)  # Число этажей
+
+        # Квартир на этаже = y / b
+        if y % b != 0:
+            # Перегенерировать y, пока оно не будет кратно b
+            while y % b != 0:
+                y = random.randint(6, 25)
+
+        x = y // b  # Квартир на этаже
+        a = random.randint(100, 999)  # Общее число квартир
+
+        # Проверяем, что a делится на x
+        while a % x != 0:
+            a = random.randint(100, 999)
+
+        self.a, self.b, self.y = a, b, y
+
+        # Формируем текст задачи
+        task_text = (
+            f"В многоквартирном доме {a} квартир. Известно, что во всех подъездах дома "
+            f"одинаковое число этажей и на любом этаже каждого подъезда одинаковое число "
+            f"квартир (больше одной). Сколько этажей в этом доме, если число квартир "
+            f"на каждом этаже в подъезде в {b} раза меньше числа этажей в доме?"
+        )
+
+        self.label.setText(task_text)
+        self.input_field.clear()
+        self.result_label.clear()
+        self.result_label.hide()
+        self.next_btn.setVisible(False)
+
+    def check_answer(self):
+        try:
+            user_input = int(self.input_field.text().strip())
+            if user_input == self.y:
+                self.result_label.setText("Правильно!")
+                self.result_label.setStyleSheet("color: green; font-size:60px;")
+            else:
+                self.result_label.setText(f"Неправильно. Правильный ответ: {self.y}")
+                self.result_label.setStyleSheet("color: red; font-size: 60px;")
+        except ValueError:
+            self.result_label.setText("Введите целое число.")
+            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
+
+        self.result_label.show()
+        self.submit_btn.setEnabled(False)
+        self.next_btn.setVisible(True)
+
+    def reset_task(self):
+        self.submit_btn.setEnabled(True)
+        self.next_btn.setVisible(False)
+        self.result_label.clear()
+        self.result_label.hide()
+        self.input_field.clear()
+        self.generate_task()
+
+class Task9(BaseTask):
+    def __init__(self):
+        super().__init__()
+
+        # Центральный фрейм
+        self.central_frame = QFrame()
+        central_layout = QVBoxLayout()
+        central_layout.setAlignment(Qt.AlignCenter)
+
+        # Метка с длинным текстом задачи
+        self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
+        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setWordWrap(True)  # Разрешить перенос строк
+        font = QFont()
+        font.setPointSize(60)
+        self.label.setFont(font)
+
+        # Поле ввода ответа
+        self.input_field = QLineEdit()
+        self.input_field.setAlignment(Qt.AlignCenter)
+
+        # Стиль поля ввода
+        self.input_field.setStyleSheet("""
+            QLineEdit {
+                background-color: white;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+                padding: 8px;
+                font-size: 60px;
+                color: black;
+            }
+            QLineEdit:focus {
+                border: 2px solid #007acc;
+            }
+        """)
+
+        # Результат
+        self.result_label = QLabel("")
+        self.result_label.setAlignment(Qt.AlignCenter)
+        self.result_label.setStyleSheet("font-size: 60px;")
+        self.result_label.hide()
+
+        # Кнопки
+        self.submit_btn = QPushButton("Проверить")
+        self.next_btn = QPushButton("Продолжить")
+        self.next_btn.setVisible(False)
+
+        button_style = """
+            QPushButton {
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: 60px;
+                color: black;
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
+            }
+            QPushButton:pressed {
+                background-color: #d0d0d0;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #888888;
+            }
+        """
+        self.submit_btn.setStyleSheet(button_style)
+        self.next_btn.setStyleSheet(button_style)
+
+        # Виртуальная клавиатура
+        self.keyboard_layout = QGridLayout()
+        self.setup_virtual_keyboard()
+
+        # Компоновка
+        central_layout.addWidget(self.label)
+        central_layout.addSpacing(20)
+        central_layout.addWidget(self.input_field)
+        central_layout.addLayout(self.keyboard_layout)
+        central_layout.addWidget(self.submit_btn)
+        central_layout.addWidget(self.result_label)
+        central_layout.addWidget(self.next_btn)
+
+        self.central_frame.setLayout(central_layout)
+        self.layout.addWidget(self.central_frame)
+
+        self.submit_btn.clicked.connect(self.check_answer)
+        self.next_btn.clicked.connect(self.reset_task)
+
+    def setup_virtual_keyboard(self):
+        buttons = [
+            ['1', '2', '3'],
+            ['4', '5', '6'],
+            ['7', '8', '9'],
+            ['0', '-', ',']
+        ]
+        for i, row in enumerate(buttons):
+            for j, char in enumerate(row):
+                btn = QPushButton(char)
+                btn.clicked.connect(lambda _, s=char: self.append_to_input(s))
+                btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: 60px;
+                        color: black;
+                    }
+                    QPushButton:hover {
+                        background-color: #f5f5f5;
+                    }
+                """)
+                self.keyboard_layout.addWidget(btn, i, j)
+
+    def append_to_input(self, char):
+        current_text = self.input_field.text()
+        self.input_field.setText(current_text + char)
+
+    def generate_task(self):
+        # Предварительно сгенерировать все валидные комбинации
+        valid_combinations = []
+
+        for a in range(20, 31):
+            for b in range(2, 10):
+                for v in range(20, 31):
+                    if (a * v) % 100 != 0:
+                        continue
+                    class_a = a
+                    class_b = a - b
+                    class_c = a - (a * v // 100)
+                    total = class_a + class_b + class_c
+
+                    if 50 <= total <= 90:
+                        valid_combinations.append((a, b, v, total))
+
+        if not valid_combinations:
+            # Если нет валидных комбинаций, бросить исключение
+            raise RuntimeError("No valid combinations found for Task9 parameters.")
+
+        # Выбираем случайную комбинацию
+        a, b, v, total = random.choice(valid_combinations)
+
+        self.a, self.b, self.v, self.total = a, b, v, total
+
+        # Формируем текст задачи
+        task_text = (
+            f"В 6 \"А\" классе учится {a} человек, что на {b} человека больше, "
+            f"чем в 6 \"В\" классе. А в 6 \"Б\" классе учеников на {v}% меньше, "
+            f"чем в 6 \"А\". Сколько всего учеников в этих трёх классах?"
+        )
+
+        self.label.setText(task_text)
+        self.input_field.clear()
+        self.result_label.clear()
+        self.result_label.hide()
+        self.next_btn.setVisible(False)
+
+    def check_answer(self):
+        try:
+            user_input = int(self.input_field.text().strip())
+            if user_input == self.total:
+                self.result_label.setText("Правильно!")
+                self.result_label.setStyleSheet("color: green; font-size:60px;")
+            else:
+                self.result_label.setText(f"Неправильно. Правильный ответ: {self.total}")
+                self.result_label.setStyleSheet("color: red; font-size: 60px;")
+        except ValueError:
+            self.result_label.setText("Введите целое число.")
+            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
+
+        self.result_label.show()
+        self.submit_btn.setEnabled(False)
+        self.next_btn.setVisible(True)
+
+    def reset_task(self):
+        self.submit_btn.setEnabled(True)
+        self.next_btn.setVisible(False)
+        self.result_label.clear()
+        self.result_label.hide()
+        self.input_field.clear()
+        self.generate_task()
+
+class Task10(BaseTask):
+    def __init__(self):
+        super().__init__()
+
+        # Центральный фрейм
+        self.central_frame = QFrame()
+        central_layout = QVBoxLayout()
+        central_layout.setAlignment(Qt.AlignCenter)
+
+        # Метка с длинным текстом задачи
+        self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
+        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setWordWrap(True)  # Разрешить перенос строк
+        font = QFont()
+        font.setPointSize(60)
+        self.label.setFont(font)
+
+        # Поле ввода ответа
+        self.input_field = QLineEdit()
+        self.input_field.setAlignment(Qt.AlignCenter)
+
+        # Стиль поля ввода
+        self.input_field.setStyleSheet("""
+            QLineEdit {
+                background-color: white;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+                padding: 8px;
+                font-size: 60px;
+                color: black;
+            }
+            QLineEdit:focus {
+                border: 2px solid #007acc;
+            }
+        """)
+
+        # Результат
+        self.result_label = QLabel("")
+        self.result_label.setAlignment(Qt.AlignCenter)
+        self.result_label.setStyleSheet("font-size: 60px;")
+        self.result_label.hide()
+
+        # Кнопки
+        self.submit_btn = QPushButton("Проверить")
+        self.next_btn = QPushButton("Продолжить")
+        self.next_btn.setVisible(False)
+
+        button_style = """
+            QPushButton {
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: 60px;
+                color: black;
+            }
+            QPushButton:hover {
+                background-color: #e0e0e0;
+            }
+            QPushButton:pressed {
+                background-color: #d0d0d0;
+            }
+            QPushButton:disabled {
+                background-color: #cccccc;
+                color: #888888;
+            }
+        """
+        self.submit_btn.setStyleSheet(button_style)
+        self.next_btn.setStyleSheet(button_style)
+
+        # Виртуальная клавиатура
+        self.keyboard_layout = QGridLayout()
+        self.setup_virtual_keyboard()
+
+        # Компоновка
+        central_layout.addWidget(self.label)
+        central_layout.addSpacing(20)
+        central_layout.addWidget(self.input_field)
+        central_layout.addLayout(self.keyboard_layout)
+        central_layout.addWidget(self.submit_btn)
+        central_layout.addWidget(self.result_label)
+        central_layout.addWidget(self.next_btn)
+
+        self.central_frame.setLayout(central_layout)
+        self.layout.addWidget(self.central_frame)
+
+        self.submit_btn.clicked.connect(self.check_answer)
+        self.next_btn.clicked.connect(self.reset_task)
+
+    def setup_virtual_keyboard(self):
+        buttons = [
+            ['1', '2', '3'],
+            ['4', '5', '6'],
+            ['7', '8', '9'],
+            ['0', '-', ',']
+        ]
+        for i, row in enumerate(buttons):
+            for j, char in enumerate(row):
+                btn = QPushButton(char)
+                btn.clicked.connect(lambda _, s=char: self.append_to_input(s))
+                btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: 60px;
+                        color: black;
+                    }
+                    QPushButton:hover {
+                        background-color: #f5f5f5;
+                    }
+                """)
+                self.keyboard_layout.addWidget(btn, i, j)
+
+    def append_to_input(self, char):
+        current_text = self.input_field.text()
+        self.input_field.setText(current_text + char)
+
+    def generate_task(self):
+        # Генерируем A и B
+        a = random.randint(2, 6)
+        b = random.randint(1, 9) * 10  # Кратное 10: 10, 20, ..., 90
+
+        # Уравнение: (A * d) * 10 - d * 10 = B
+        # => (A - 1) * d * 10 = B
+        # => d = B / ((A - 1) * 10)
+
+        denominator = (a - 1) * 10
+        if b % denominator != 0:
+            # Перегенерируем B, пока не найдём подходящее
+            while b % denominator != 0:
+                b = random.randint(1, 9) * 10
+
+        d = b // denominator
+        x = d * 10
+
+        # Проверим, что x — двузначное и оканчивается на 0
+        assert 10 <= x <= 90 and x % 10 == 0
+
+        self.a, self.b, self.x = a, b, x
+
+        # Формируем текст задачи
+        task_text = (
+            f"Задумали двузначное число, которое кратно 10. "
+            f"Если цифру десятков увеличить в {a} раза, "
+            f"то число увеличится на {b}. Какое число было задумано?"
+        )
+
+        self.label.setText(task_text)
+        self.input_field.clear()
+        self.result_label.clear()
+        self.result_label.hide()
+        self.next_btn.setVisible(False)
+
+    def check_answer(self):
+        try:
+            user_input = int(self.input_field.text().strip())
+            if user_input == self.x:
+                self.result_label.setText("Правильно!")
+                self.result_label.setStyleSheet("color: green; font-size:60px;")
+            else:
+                self.result_label.setText(f"Неправильно. Правильный ответ: {self.x}")
+                self.result_label.setStyleSheet("color: red; font-size: 60px;")
+        except ValueError:
+            self.result_label.setText("Введите целое число.")
+            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
+
+        self.result_label.show()
+        self.submit_btn.setEnabled(False)
+        self.next_btn.setVisible(True)
+
+    def reset_task(self):
+        self.submit_btn.setEnabled(True)
+        self.next_btn.setVisible(False)
+        self.result_label.clear()
+        self.result_label.hide()
+        self.input_field.clear()
+        self.generate_task()
 
 class MathTrainer(QMainWindow):
     def __init__(self):
@@ -878,14 +1911,14 @@ class MathTrainer(QMainWindow):
             }
             QLabel {
                 color: black;
-                font-size: 16px;
+                font-size:60px;
             }
             QPushButton {
                 background-color: #f0f0f0;
                 border: 1px solid #ccc;
                 border-radius: 6px;
                 padding: 8px 16px;
-                font-size: 14px;
+                font-size: 60px;
                 color: black;
             }
             QPushButton:hover {
@@ -918,8 +1951,8 @@ class MathTrainer(QMainWindow):
                     background-color: #ffffff;
                     border: 1px solid #ccc;
                     border-radius: 6px;
-                    padding: 6px 12px;
-                    font-size: 14px;
+                    padding: 6px 22px;
+                    font-size: 60px;
                     color: black;
                 }
                 QPushButton:checked {
@@ -947,6 +1980,11 @@ class MathTrainer(QMainWindow):
         self.tasks[2] = Task3() 
         self.tasks[3] = Task4() 
         self.tasks[4] = Task5() 
+        self.tasks[5] = Task6() 
+        self.tasks[6] = Task7()
+        self.tasks[7] = Task8() 
+        self.tasks[8] = Task9() 
+        self.tasks[9] = Task10() 
 
         self.current_task_widget = None
         self.select_task(1)
@@ -954,6 +1992,8 @@ class MathTrainer(QMainWindow):
     def select_task(self, index):
         # Сбросить предыдущее состояние
         if self.current_task_widget:
+            # Сбросить состояние текущего задания перед удалением
+            self.current_task_widget.reset_task()
             self.content_area.removeWidget(self.current_task_widget)
             self.current_task_widget.setParent(None)
 
