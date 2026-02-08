@@ -3,17 +3,60 @@ import random
 import math
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget,
-    QPushButton, QLabel, QLineEdit, QGridLayout, QFrame
+    QPushButton, QLabel, QLineEdit, QGridLayout, QFrame, QScrollArea,
+    QDialog, QFormLayout, QSlider  # Добавлены для окна настроек
 )
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSettings
 from PyQt5.QtGui import QFont, QPalette, QColor
-from fractions import Fraction 
+from fractions import Fraction
+
+
+class SettingsDialog(QDialog):
+    def __init__(self, parent=None, text_scale=1.0, ui_scale=1.0):
+        super().__init__(parent)
+        self.setWindowTitle("Настройки")
+        self.setGeometry(300, 300, 400, 200)
+
+        layout = QFormLayout()
+
+        self.text_scale_slider = QSlider(Qt.Horizontal)
+        self.text_scale_slider.setMinimum(50)  # 0.5x
+        self.text_scale_slider.setMaximum(200) # 2.0x
+        self.text_scale_slider.setValue(int(text_scale * 100))
+        self.text_scale_slider.valueChanged.connect(self.on_text_scale_changed)
+        layout.addRow("Размер текста и задания:", self.text_scale_slider)
+
+        self.ui_scale_slider = QSlider(Qt.Horizontal)
+        self.ui_scale_slider.setMinimum(50)  # 0.5x
+        self.ui_scale_slider.setMaximum(200) # 2.0x
+        self.ui_scale_slider.setValue(int(ui_scale * 100))
+        self.ui_scale_slider.valueChanged.connect(self.on_ui_scale_changed)
+        layout.addRow("Размер клавиатуры и кнопок:", self.ui_scale_slider)
+
+        close_button = QPushButton("Закрыть")
+        close_button.clicked.connect(self.accept)
+        layout.addRow(close_button)
+
+        self.setLayout(layout)
+
+    def on_text_scale_changed(self, value):
+        scale = value / 100.0
+        self.parent().apply_text_scaling(scale)
+
+    def on_ui_scale_changed(self, value):
+        scale = value / 100.0
+        self.parent().apply_ui_scaling(scale)
+
+    def get_values(self):
+        return self.text_scale_slider.value() / 100.0, self.ui_scale_slider.value() / 100.0
 
 
 # Абстрактный базовый класс для задания
 class BaseTask(QWidget):
-    def __init__(self):
+    def __init__(self, text_scale=1.0, ui_scale=1.0):
         super().__init__()
+        self.text_scale = text_scale
+        self.ui_scale = ui_scale
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
 
@@ -26,42 +69,56 @@ class BaseTask(QWidget):
     def reset_task(self):
         raise NotImplementedError
 
+    def apply_text_scaling(self, scale):
+        self.text_scale = scale
+        # Этот метод должен быть переопределен в каждом конкретном задании
+        pass
 
-# Задание №1: A * (B - C), где B < C => результат всегда отрицательный
+    def apply_ui_scaling(self, scale):
+        self.ui_scale = scale
+        # Этот метод должен быть переопределен в каждом конкретном задании
+        pass
+
 class Task1(BaseTask):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, text_scale=1.0, ui_scale=1.0):
+        super().__init__(text_scale, ui_scale)
 
-        # Центральный виджет для контента
-        self.central_frame = QFrame()
-        central_layout = QVBoxLayout()
-        central_layout.setAlignment(Qt.AlignCenter)
+        # Создаем ScrollArea
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("border: none;")
+        # Виджет внутри ScrollArea
+        self.scroll_content = QWidget()
+        self.scroll_layout = QVBoxLayout(self.scroll_content)
+        self.scroll_layout.setAlignment(Qt.AlignTop)
 
         self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
         self.label.setAlignment(Qt.AlignCenter)
         font = QFont()
-        font.setPointSize(60)
+        font.setPointSize(int(60 * self.text_scale))
         self.label.setFont(font)
 
         self.input_field = QLineEdit()
         self.input_field.setAlignment(Qt.AlignCenter)
-        self.input_field.setStyleSheet("""
-            QLineEdit {
+        self.input_field.setStyleSheet(f"""
+            QLineEdit {{
                 background-color: white;
                 border: 2px solid #ccc;
                 border-radius: 8px;
                 padding: 8px;
-                font-size:60px;
+                font-size: {int(60 * self.text_scale)}px;
                 color: black;
-            }
-            QLineEdit:focus {
+                width: {int(300 * self.text_scale)}px;
+                height: {int(60 * self.text_scale)}px;
+            }}
+            QLineEdit:focus {{
                 border: 2px solid #007acc;
-            }
+            }}
         """)
 
         self.result_label = QLabel("")
         self.result_label.setAlignment(Qt.AlignCenter)
-        self.result_label.setStyleSheet("font-size:60px;")
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
         self.result_label.hide()
 
         self.submit_btn = QPushButton("Проверить")
@@ -69,25 +126,27 @@ class Task1(BaseTask):
         self.next_btn.setVisible(False)
 
         # Стиль кнопок
-        button_style = """
-            QPushButton {
+        button_style = f"""
+            QPushButton {{
                 background-color: #f0f0f0;
                 border: 1px solid #ccc;
                 border-radius: 6px;
                 padding: 8px 16px;
-                font-size: 60px;
+                font-size: {int(60 * self.text_scale)}px;
                 color: black;
-            }
-            QPushButton:hover {
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
                 background-color: #e0e0e0;
-            }
-            QPushButton:pressed {
+            }}
+            QPushButton:pressed {{
                 background-color: #d0d0d0;
-            }
-            QPushButton:disabled {
+            }}
+            QPushButton:disabled {{
                 background-color: #cccccc;
                 color: #888888;
-            }
+            }}
         """
         self.submit_btn.setStyleSheet(button_style)
         self.next_btn.setStyleSheet(button_style)
@@ -97,22 +156,25 @@ class Task1(BaseTask):
         self.c = 0
         self.correct_answer = 0
 
-        central_layout.addWidget(self.label)
-        central_layout.addSpacing(20) 
-        central_layout.addWidget(self.input_field)
-        self.setup_virtual_keyboard(central_layout)
-        central_layout.addWidget(self.submit_btn)
-        central_layout.addWidget(self.result_label)
-        central_layout.addWidget(self.next_btn)
+        self.scroll_layout.addWidget(self.label)
+        self.scroll_layout.addSpacing(int(20 * self.text_scale))
+        self.scroll_layout.addWidget(self.input_field)
+        self.setup_virtual_keyboard(self.scroll_layout)
+        self.scroll_layout.addWidget(self.submit_btn)
+        self.scroll_layout.addWidget(self.result_label)
+        self.scroll_layout.addWidget(self.next_btn)
 
-        self.central_frame.setLayout(central_layout)
-        self.layout.addWidget(self.central_frame)
+        # Устанавливаем контент в scroll area
+        self.scroll_area.setWidget(self.scroll_content)
+        # Добавляем scroll area в основной layout (от BaseTask)
+        self.layout.addWidget(self.scroll_area)
 
         self.submit_btn.clicked.connect(self.check_answer)
         self.next_btn.clicked.connect(self.reset_task)
 
     def setup_virtual_keyboard(self, parent_layout):
-        keyboard_layout = QGridLayout()
+        self.keyboard_layout = QGridLayout() # Сделаем его атрибутом класса
+        self.keyboard_buttons = [] # Список кнопок клавиатуры
 
         buttons = [
             ['1', '2', '3'],
@@ -122,25 +184,30 @@ class Task1(BaseTask):
         ]
 
         for i, row in enumerate(buttons):
+            button_row = []
             for j, char in enumerate(row):
                 btn = QPushButton(char)
                 btn.clicked.connect(lambda _, s=char: self.append_to_input(s))
-                btn.setStyleSheet("""
-                    QPushButton {
+                btn.setStyleSheet(f"""
+                    QPushButton {{
                         background-color: #ffffff;
                         border: 1px solid #ddd;
                         border-radius: 6px;
                         padding: 8px;
-                        font-size:60px;
+                        font-size: {int(60 * self.text_scale)}px;
                         color: black;
-                    }
-                    QPushButton:hover {
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
                         background-color: #f5f5f5;
-                    }
+                    }}
                 """)
-                keyboard_layout.addWidget(btn, i, j)
+                self.keyboard_layout.addWidget(btn, i, j)
+                button_row.append(btn)
+            self.keyboard_buttons.append(button_row)
 
-        parent_layout.addLayout(keyboard_layout)
+        parent_layout.addLayout(self.keyboard_layout)
 
     def append_to_input(self, char):
         current_text = self.input_field.text()
@@ -164,13 +231,13 @@ class Task1(BaseTask):
             user_input = float(self.input_field.text().replace(',', '.'))
             if user_input == self.correct_answer:
                 self.result_label.setText("Правильно!")
-                self.result_label.setStyleSheet("color: green; font-size:60px;")
+                self.result_label.setStyleSheet(f"color: green; font-size: {int(60 * self.text_scale)}px;")
             else:
                 self.result_label.setText(f"Неправильно. Правильный ответ: {self.correct_answer}")
-                self.result_label.setStyleSheet("color: red; font-size: 60px;")
+                self.result_label.setStyleSheet(f"color: red; font-size: {int(60 * self.text_scale)}px;")
         except ValueError:
             self.result_label.setText("Введите число.")
-            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
+            self.result_label.setStyleSheet(f"color: orange; font-size: {int(60 * self.text_scale)}px;")
 
         self.result_label.show()
         self.submit_btn.setEnabled(False)
@@ -184,20 +251,173 @@ class Task1(BaseTask):
         self.input_field.clear()
         self.generate_task()
 
-class Task2(BaseTask):
-    def __init__(self):
-        super().__init__()
+    def apply_text_scaling(self, scale):
+        self.text_scale = scale
+        font = QFont()
+        font.setPointSize(int(60 * self.text_scale))
+        self.label.setFont(font)
+        self.input_field.setStyleSheet(f"""
+            QLineEdit {{
+                background-color: white;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+                padding: 8px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+                width: {int(300 * self.text_scale)}px;
+                height: {int(60 * self.text_scale)}px;
+            }}
+            QLineEdit:focus {{
+                border: 2px solid #007acc;
+            }}
+        """)
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: {int(60 * self.text_scale)}px;
+                        color: black;
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: #f5f5f5;
+                    }}
+                """)
+        self.submit_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.submit_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
+                background-color: #e0e0e0;
+            }}
+            QPushButton:pressed {{
+                background-color: #d0d0d0;
+            }}
+            QPushButton:disabled {{
+                background-color: #cccccc;
+                color: #888888;
+            }}
+        """)
+        self.next_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.next_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
+                background-color: #e0e0e0;
+            }}
+            QPushButton:pressed {{
+                background-color: #d0d0d0;
+            }}
+            QPushButton:disabled {{
+                background-color: #cccccc;
+                color: #888888;
+            }}
+        """)
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
 
-        # Центральный фрейм
-        self.central_frame = QFrame()
-        central_layout = QVBoxLayout()
-        central_layout.setAlignment(Qt.AlignCenter)
+    def apply_ui_scaling(self, scale):
+        self.ui_scale = scale
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: {int(60 * self.text_scale)}px;
+                        color: black;
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: #f5f5f5;
+                    }}
+                """)
+        self.submit_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
+                background-color: #e0e0e0;
+            }}
+            QPushButton:pressed {{
+                background-color: #d0d0d0;
+            }}
+            QPushButton:disabled {{
+                background-color: #cccccc;
+                color: #888888;
+            }}
+        """)
+        self.next_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
+                background-color: #e0e0e0;
+            }}
+            QPushButton:pressed {{
+                background-color: #d0d0d0;
+            }}
+            QPushButton:disabled {{
+                background-color: #cccccc;
+                color: #888888;
+            }}
+        """)
+
+class Task2(BaseTask):
+    def __init__(self, text_scale=1.0, ui_scale=1.0):
+        super().__init__(text_scale, ui_scale)
+
+        # Создаем ScrollArea
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("border: none;")
+        # Виджет внутри ScrollArea
+        self.scroll_content = QWidget()
+        self.scroll_layout = QVBoxLayout(self.scroll_content)
+        self.scroll_layout.setAlignment(Qt.AlignTop)
 
         # Текст задания (с дробями)
         self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
         self.label.setAlignment(Qt.AlignCenter)
         font = QFont()
-        font.setPointSize(60)
+        font.setPointSize(int(60 * self.text_scale))
         self.label.setFont(font)
 
         # Поля для ответа (числитель и знаменатель)
@@ -212,6 +432,7 @@ class Task2(BaseTask):
 
         # Виртуальная клавиатура
         self.keyboard_layout = QGridLayout()
+        self.keyboard_buttons = [] # Список кнопок клавиатуры
         self.setup_virtual_keyboard()
 
         # Кнопки
@@ -225,56 +446,62 @@ class Task2(BaseTask):
         self.result_label.hide()
 
         # Стили
-        input_style = """
-            QLineEdit {
+        input_style = f"""
+            QLineEdit {{
                 background-color: white;
                 border: 2px solid #ccc;
                 border-radius: 8px;
                 padding: 8px;
-                font-size:60px;
+                font-size: {int(60 * self.text_scale)}px;
                 color: black;
-                min-width: 80px;
-            }
+                min-width: {int(80 * self.text_scale)}px;
+                width: {int(200 * self.text_scale)}px;
+                height: {int(60 * self.text_scale)}px;
+            }}
         """
         self.answer_num.setStyleSheet(input_style)
         self.answer_den.setStyleSheet(input_style)
 
-        button_style = """
-            QPushButton {
+        button_style = f"""
+            QPushButton {{
                 background-color: #f0f0f0;
                 border: 1px solid #ccc;
                 border-radius: 6px;
                 padding: 8px 16px;
-                font-size: 60px;
+                font-size: {int(60 * self.text_scale)}px;
                 color: black;
-            }
-            QPushButton:hover {
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
                 background-color: #e0e0e0;
-            }
-            QPushButton:pressed {
+            }}
+            QPushButton:pressed {{
                 background-color: #d0d0d0;
-            }
-            QPushButton:disabled {
+            }}
+            QPushButton:disabled {{
                 background-color: #cccccc;
                 color: #888888;
-            }
+            }}
         """
         self.submit_btn.setStyleSheet(button_style)
         self.next_btn.setStyleSheet(button_style)
 
         # Собираем layout
-        central_layout.addWidget(self.label)
-        central_layout.addSpacing(20) 
-        central_layout.addWidget(self.answer_num)
-        central_layout.addWidget(self.answer_div_line)
-        central_layout.addWidget(self.answer_den)
-        central_layout.addLayout(self.keyboard_layout)
-        central_layout.addWidget(self.submit_btn)
-        central_layout.addWidget(self.result_label)
-        central_layout.addWidget(self.next_btn)
+        self.scroll_layout.addWidget(self.label)
+        self.scroll_layout.addSpacing(int(20 * self.text_scale))
+        self.scroll_layout.addWidget(self.answer_num)
+        self.scroll_layout.addWidget(self.answer_div_line)
+        self.scroll_layout.addWidget(self.answer_den)
+        self.scroll_layout.addLayout(self.keyboard_layout)
+        self.scroll_layout.addWidget(self.submit_btn)
+        self.scroll_layout.addWidget(self.result_label)
+        self.scroll_layout.addWidget(self.next_btn)
 
-        self.central_frame.setLayout(central_layout)
-        self.layout.addWidget(self.central_frame)
+        # Устанавливаем контент в scroll area
+        self.scroll_area.setWidget(self.scroll_content)
+        # Добавляем scroll area в основной layout (от BaseTask)
+        self.layout.addWidget(self.scroll_area)
 
         self.submit_btn.clicked.connect(self.check_answer)
         self.next_btn.clicked.connect(self.reset_task)
@@ -288,23 +515,28 @@ class Task2(BaseTask):
         ]
 
         for i, row in enumerate(buttons):
+            button_row = []
             for j, char in enumerate(row):
                 btn = QPushButton(char)
                 btn.clicked.connect(lambda _, s=char: self.append_to_active_input(s))
-                btn.setStyleSheet("""
-                    QPushButton {
+                btn.setStyleSheet(f"""
+                    QPushButton {{
                         background-color: #ffffff;
                         border: 1px solid #ddd;
                         border-radius: 6px;
                         padding: 8px;
-                        font-size: 60px;
+                        font-size: {int(60 * self.text_scale)}px;
                         color: black;
-                    }
-                    QPushButton:hover {
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
                         background-color: #f5f5f5;
-                    }
+                    }}
                 """)
                 self.keyboard_layout.addWidget(btn, i, j)
+                button_row.append(btn)
+            self.keyboard_buttons.append(button_row)
 
     def append_to_active_input(self, char, field):
         current_text = field.text()
@@ -337,7 +569,7 @@ class Task2(BaseTask):
         # Формирование строки задания
         task_html = f"""
         <div style="text-align: center;">
-        <span style="font-size: 60px;">
+        <span style="font-size: {int(60 * self.text_scale)}px;">
         (<sup>{a}</sup>&frasl;<sub>{b}</sub> &minus; <sup>{c}</sup>&frasl;<sub>{d}</sub>) &divide; <sup>{e}</sup>&frasl;<sub>{f}</sub>
         </span>
         </div>
@@ -359,7 +591,7 @@ class Task2(BaseTask):
             # Проверка знаменателя
             if den == 0:
                 self.result_label.setText("Знаменатель не может быть 0.")
-                self.result_label.setStyleSheet("color: orange; font-size: 60px;")
+                self.result_label.setStyleSheet(f"color: orange; font-size: {int(60 * self.text_scale)}px;")
                 self.result_label.show()
                 return
 
@@ -374,16 +606,16 @@ class Task2(BaseTask):
 
             if user_fraction == correct_result:
                 self.result_label.setText("Правильно!")
-                self.result_label.setStyleSheet("color: green; font-size: 60px;")
+                self.result_label.setStyleSheet(f"color: green; font-size: {int(60 * self.text_scale)}px;")
             else:
                 self.result_label.setText(
                     f"Неправильно. Правильный ответ: {correct_result.numerator}/{correct_result.denominator}"
                 )
-                self.result_label.setStyleSheet("color: red; font-size: 60px;")
+                self.result_label.setStyleSheet(f"color: red; font-size: {int(60 * self.text_scale)}px;")
 
         except ValueError:
             self.result_label.setText("Введите числа в оба поля.")
-            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
+            self.result_label.setStyleSheet(f"color: orange; font-size: {int(60 * self.text_scale)}px;")
 
         self.result_label.show()
         self.submit_btn.setEnabled(False)
@@ -398,36 +630,188 @@ class Task2(BaseTask):
         self.answer_den.clear()
         self.generate_task()
 
+    def apply_text_scaling(self, scale):
+        self.text_scale = scale
+        font = QFont()
+        font.setPointSize(int(60 * self.text_scale))
+        self.label.setFont(font)
+        input_style = f"""
+            QLineEdit {{
+                background-color: white;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+                padding: 8px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+                min-width: {int(80 * self.text_scale)}px;
+                width: {int(200 * self.text_scale)}px;
+                height: {int(60 * self.text_scale)}px;
+            }}
+        """
+        self.answer_num.setStyleSheet(input_style)
+        self.answer_den.setStyleSheet(input_style)
+        self.answer_div_line.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: {int(60 * self.text_scale)}px;
+                        color: black;
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: #f5f5f5;
+                    }}
+                """)
+        self.submit_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.submit_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
+                background-color: #e0e0e0;
+            }}
+            QPushButton:pressed {{
+                background-color: #d0d0d0;
+            }}
+            QPushButton:disabled {{
+                background-color: #cccccc;
+                color: #888888;
+            }}
+        """)
+        self.next_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.next_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
+                background-color: #e0e0e0;
+            }}
+            QPushButton:pressed {{
+                background-color: #d0d0d0;
+            }}
+            QPushButton:disabled {{
+                background-color: #cccccc;
+                color: #888888;
+            }}
+        """)
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
+
+    def apply_ui_scaling(self, scale):
+        self.ui_scale = scale
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: {int(60 * self.text_scale)}px;
+                        color: black;
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: #f5f5f5;
+                    }}
+                """)
+        self.submit_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
+                background-color: #e0e0e0;
+            }}
+            QPushButton:pressed {{
+                background-color: #d0d0d0;
+            }}
+            QPushButton:disabled {{
+                background-color: #cccccc;
+                color: #888888;
+            }}
+        """)
+        self.next_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
+                background-color: #e0e0e0;
+            }}
+            QPushButton:pressed {{
+                background-color: #d0d0d0;
+            }}
+            QPushButton:disabled {{
+                background-color: #cccccc;
+                color: #888888;
+            }}
+        """)
+
 class Task3(BaseTask):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, text_scale=1.0, ui_scale=1.0):
+        super().__init__(text_scale, ui_scale)
         self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
         self.label.setAlignment(Qt.AlignCenter)
         font = QFont()
-        font.setPointSize(60)
+        font.setPointSize(int(60 * self.text_scale))
         self.label.setFont(font)
 
         self.input_field = QLineEdit()
         self.input_field.setAlignment(Qt.AlignCenter)
 
         # Стиль поля ввода
-        self.input_field.setStyleSheet("""
-            QLineEdit {
+        self.input_field.setStyleSheet(f"""
+            QLineEdit {{
                 background-color: white;
                 border: 2px solid #ccc;
                 border-radius: 8px;
                 padding: 8px;
-                font-size: 60px;
+                font-size: {int(60 * self.text_scale)}px;
                 color: black;
-            }
-            QLineEdit:focus {
+                width: {int(300 * self.text_scale)}px;
+                height: {int(60 * self.text_scale)}px;
+            }}
+            QLineEdit:focus {{
                 border: 2px solid #007acc;
-            }
+            }}
         """)
 
         self.result_label = QLabel("")
         self.result_label.setAlignment(Qt.AlignCenter)
-        self.result_label.setStyleSheet("font-size:60px;")
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
         self.result_label.hide()
 
         self.submit_btn = QPushButton("Проверить")
@@ -435,25 +819,27 @@ class Task3(BaseTask):
         self.next_btn.setVisible(False)
 
         # Стиль кнопок
-        button_style = """
-            QPushButton {
+        button_style = f"""
+            QPushButton {{
                 background-color: #f0f0f0;
                 border: 1px solid #ccc;
                 border-radius: 6px;
                 padding: 8px 16px;
-                font-size: 60px;
+                font-size: {int(60 * self.text_scale)}px;
                 color: black;
-            }
-            QPushButton:hover {
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
                 background-color: #e0e0e0;
-            }
-            QPushButton:pressed {
+            }}
+            QPushButton:pressed {{
                 background-color: #d0d0d0;
-            }
-            QPushButton:disabled {
+            }}
+            QPushButton:disabled {{
                 background-color: #cccccc;
                 color: #888888;
-            }
+            }}
         """
         self.submit_btn.setStyleSheet(button_style)
         self.next_btn.setStyleSheet(button_style)
@@ -463,21 +849,35 @@ class Task3(BaseTask):
         self.c = 0.0
         self.correct_answer = 0.0
 
+        # Создаем ScrollArea
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("border: none;")
+        # Виджет внутри ScrollArea
+        self.scroll_content = QWidget()
+        self.scroll_layout = QVBoxLayout(self.scroll_content)
+        self.scroll_layout.setAlignment(Qt.AlignTop)
+
         # Компоновка
-        layout = self.layout
-        layout.addWidget(self.label)
-        layout.addSpacing(20) 
-        layout.addWidget(self.input_field)
+        self.scroll_layout.addWidget(self.label)
+        self.scroll_layout.addSpacing(int(20 * self.text_scale))
+        self.scroll_layout.addWidget(self.input_field)
         self.setup_virtual_keyboard()
-        layout.addWidget(self.submit_btn)
-        layout.addWidget(self.result_label)
-        layout.addWidget(self.next_btn)
+        self.scroll_layout.addWidget(self.submit_btn)
+        self.scroll_layout.addWidget(self.result_label)
+        self.scroll_layout.addWidget(self.next_btn)
+
+        # Устанавливаем контент в scroll area
+        self.scroll_area.setWidget(self.scroll_content)
+        # Добавляем scroll area в основной layout (от BaseTask)
+        self.layout.addWidget(self.scroll_area)
 
         self.submit_btn.clicked.connect(self.check_answer)
         self.next_btn.clicked.connect(self.reset_task)
 
     def setup_virtual_keyboard(self):
-        keyboard_layout = QGridLayout()
+        self.keyboard_layout = QGridLayout() # Сделаем его атрибутом класса
+        self.keyboard_buttons = [] # Список кнопок клавиатуры
 
         buttons = [
             ['1', '2', '3'],
@@ -487,25 +887,30 @@ class Task3(BaseTask):
         ]
 
         for i, row in enumerate(buttons):
+            button_row = []
             for j, char in enumerate(row):
                 btn = QPushButton(char)
                 btn.clicked.connect(lambda _, s=char: self.append_to_input(s))
-                btn.setStyleSheet("""
-                    QPushButton {
+                btn.setStyleSheet(f"""
+                    QPushButton {{
                         background-color: #ffffff;
                         border: 1px solid #ddd;
                         border-radius: 6px;
                         padding: 8px;
-                        font-size:60px;
+                        font-size: {int(60 * self.text_scale)}px;
                         color: black;
-                    }
-                    QPushButton:hover {
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
                         background-color: #f5f5f5;
-                    }
+                    }}
                 """)
-                keyboard_layout.addWidget(btn, i, j)
+                self.keyboard_layout.addWidget(btn, i, j)
+                button_row.append(btn)
+            self.keyboard_buttons.append(button_row)
 
-        self.layout.addLayout(keyboard_layout)
+        self.scroll_layout.addLayout(self.keyboard_layout)
 
     def append_to_input(self, char):
         current_text = self.input_field.text()
@@ -520,7 +925,7 @@ class Task3(BaseTask):
         self.a, self.b, self.c = a, b, c
         self.correct_answer = a - b * c
 
-        task_str = f"{a} – {b} * ({c}) ="
+        task_str = f"{a} – {b} × ({c}) ="
         self.label.setText(task_str)
         self.input_field.clear()
         self.result_label.clear()
@@ -532,13 +937,13 @@ class Task3(BaseTask):
             user_input = float(self.input_field.text().replace(',', '.'))
             if abs(user_input - self.correct_answer) < 1e-6:  # Проверка с допуском
                 self.result_label.setText("Правильно!")
-                self.result_label.setStyleSheet("color: green; font-size: 60px;")
+                self.result_label.setStyleSheet(f"color: green; font-size: {int(60 * self.text_scale)}px;")
             else:
                 self.result_label.setText(f"Неправильно. Правильный ответ: {round(self.correct_answer, 2)}")
-                self.result_label.setStyleSheet("color: red; font-size: 60px;")
+                self.result_label.setStyleSheet(f"color: red; font-size: {int(60 * self.text_scale)}px;")
         except ValueError:
             self.result_label.setText("Введите число.")
-            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
+            self.result_label.setStyleSheet(f"color: orange; font-size: {int(60 * self.text_scale)}px;")
 
         self.result_label.show()
         self.submit_btn.setEnabled(False)
@@ -552,114 +957,284 @@ class Task3(BaseTask):
         self.input_field.clear()
         self.generate_task()
 
-class Task4(BaseTask):
-    def __init__(self):
-        super().__init__()
-        self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
-        self.label.setAlignment(Qt.AlignCenter)
+    def apply_text_scaling(self, scale):
+        self.text_scale = scale
         font = QFont()
-        font.setPointSize(60)
+        font.setPointSize(int(60 * self.text_scale))
         self.label.setFont(font)
-
-        self.input_field = QLineEdit()
-        self.input_field.setAlignment(Qt.AlignCenter)
-
-        # Стиль поля ввода
-        self.input_field.setStyleSheet("""
-            QLineEdit {
+        self.input_field.setStyleSheet(f"""
+            QLineEdit {{
                 background-color: white;
                 border: 2px solid #ccc;
                 border-radius: 8px;
                 padding: 8px;
-                font-size: 60px;
+                font-size: {int(60 * self.text_scale)}px;
                 color: black;
-            }
-            QLineEdit:focus {
+                width: {int(300 * self.text_scale)}px;
+                height: {int(60 * self.text_scale)}px;
+            }}
+            QLineEdit:focus {{
                 border: 2px solid #007acc;
-            }
+            }}
         """)
-
-        self.result_label = QLabel("")
-        self.result_label.setAlignment(Qt.AlignCenter)
-        self.result_label.setStyleSheet("font-size:60px;")
-        self.result_label.hide()
-
-        self.submit_btn = QPushButton("Проверить")
-        self.next_btn = QPushButton("Продолжить")
-        self.next_btn.setVisible(False)
-
-        # Стиль кнопок
-        button_style = """
-            QPushButton {
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: {int(60 * self.text_scale)}px;
+                        color: black;
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: #f5f5f5;
+                    }}
+                """)
+        self.submit_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.submit_btn.setStyleSheet(f"""
+            QPushButton {{
                 background-color: #f0f0f0;
                 border: 1px solid #ccc;
                 border-radius: 6px;
                 padding: 8px 16px;
-                font-size: 60px;
+                font-size: {int(60 * self.text_scale)}px;
                 color: black;
-            }
-            QPushButton:hover {
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
                 background-color: #e0e0e0;
-            }
-            QPushButton:pressed {
+            }}
+            QPushButton:pressed {{
                 background-color: #d0d0d0;
-            }
-            QPushButton:disabled {
+            }}
+            QPushButton:disabled {{
                 background-color: #cccccc;
                 color: #888888;
-            }
+            }}
+        """)
+        self.next_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.next_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
+                background-color: #e0e0e0;
+            }}
+            QPushButton:pressed {{
+                background-color: #d0d0d0;
+            }}
+            QPushButton:disabled {{
+                background-color: #cccccc;
+                color: #888888;
+            }}
+        """)
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
+
+    def apply_ui_scaling(self, scale):
+        self.ui_scale = scale
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: {int(60 * self.text_scale)}px;
+                        color: black;
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: #f5f5f5;
+                    }}
+                """)
+        self.submit_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
+                background-color: #e0e0e0;
+            }}
+            QPushButton:pressed {{
+                background-color: #d0d0d0;
+            }}
+            QPushButton:disabled {{
+                background-color: #cccccc;
+                color: #888888;
+            }}
+        """)
+        self.next_btn.setStyleSheet(f"""
+            QPushButton {{
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 8px 16px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
+                background-color: #e0e0e0;
+            }}
+            QPushButton:pressed {{
+                background-color: #d0d0d0;
+            }}
+            QPushButton:disabled {{
+                background-color: #cccccc;
+                color: #888888;
+            }}
+        """)
+
+class Task4(BaseTask):
+    def __init__(self, text_scale=1.0, ui_scale=1.0):
+        super().__init__(text_scale, ui_scale)
+        # Создаем ScrollArea
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("border: none;")
+        # Виджет внутри ScrollArea
+        self.scroll_content = QWidget()
+        self.scroll_layout = QVBoxLayout(self.scroll_content)
+        self.scroll_layout.setAlignment(Qt.AlignTop)
+
+        # Метка с длинным текстом задачи
+        self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
+        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setWordWrap(True)  # Разрешить перенос строк
+        font = QFont()
+        font.setPointSize(int(60 * self.text_scale))
+        self.label.setFont(font)
+
+        # Добавляем метку в scroll_layout
+        self.scroll_layout.addWidget(self.label)
+
+        # Поле ввода ответа
+        self.input_field = QLineEdit()
+        self.input_field.setAlignment(Qt.AlignCenter)
+        # Стиль поля ввода
+        line_edit_style = f"""
+        QLineEdit {{
+            background-color: white;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            padding: 8px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            width: {int(300 * self.text_scale)}px;
+            height: {int(60 * self.text_scale)}px;
+        }}
+        QLineEdit:focus {{
+            border: 2px solid #007acc;
+        }}
         """
-        self.submit_btn.setStyleSheet(button_style)
-        self.next_btn.setStyleSheet(button_style)
+        self.input_field.setStyleSheet(line_edit_style)
+        self.scroll_layout.addWidget(self.input_field)
 
-        self.a = 0
-        self.b = 0
-        self.c = 0
-        self.correct_answer = 0
-
-        # Компоновка
-        layout = self.layout
-        layout.addWidget(self.label)
-        layout.addSpacing(20) 
-        layout.addWidget(self.input_field)
-        self.setup_virtual_keyboard()
-        layout.addWidget(self.submit_btn)
-        layout.addWidget(self.result_label)
-        layout.addWidget(self.next_btn)
-
-        self.submit_btn.clicked.connect(self.check_answer)
-        self.next_btn.clicked.connect(self.reset_task)
-
-    def setup_virtual_keyboard(self):
-        keyboard_layout = QGridLayout()
-
+        # Виртуальная клавиатура
+        self.keyboard_layout = QGridLayout() # Сделаем его атрибутом класса
         buttons = [
             ['1', '2', '3'],
             ['4', '5', '6'],
             ['7', '8', '9'],
             ['0', '-', ',']
         ]
-
+        self.keyboard_buttons = [] # Список кнопок клавиатуры
         for i, row in enumerate(buttons):
+            button_row = []
             for j, char in enumerate(row):
                 btn = QPushButton(char)
                 btn.clicked.connect(lambda _, s=char: self.append_to_input(s))
-                btn.setStyleSheet("""
-                    QPushButton {
-                        background-color: #ffffff;
-                        border: 1px solid #ddd;
-                        border-radius: 6px;
-                        padding: 8px;
-                        font-size:60px;
-                        color: black;
-                    }
-                    QPushButton:hover {
-                        background-color: #f5f5f5;
-                    }
+                btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: #ffffff;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                    padding: 8px;
+                    font-size: {int(60 * self.text_scale)}px;
+                    color: black;
+                    min-width: {int(60 * self.ui_scale)}px;
+                    min-height: {int(60 * self.ui_scale)}px;
+                }}
+                QPushButton:hover {{
+                    background-color: #f5f5f5;
+                }}
                 """)
-                keyboard_layout.addWidget(btn, i, j)
+                self.keyboard_layout.addWidget(btn, i, j)
+                button_row.append(btn)
+            self.keyboard_buttons.append(button_row)
+        self.scroll_layout.addLayout(self.keyboard_layout)
 
-        self.layout.addLayout(keyboard_layout)
+        # Кнопки
+        self.submit_btn = QPushButton("Проверить")
+        self.next_btn = QPushButton("Продолжить")
+        self.next_btn.setVisible(False)
+        button_style = f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        QPushButton:pressed {{
+            background-color: #d0d0d0;
+        }}
+        QPushButton:disabled {{
+            background-color: #cccccc;
+            color: #888888;
+        }}
+        """
+        self.submit_btn.setStyleSheet(button_style)
+        self.next_btn.setStyleSheet(button_style)
+        self.scroll_layout.addWidget(self.submit_btn)
+        self.scroll_layout.addWidget(self.next_btn)
+
+        # Результат
+        self.result_label = QLabel("")
+        self.result_label.setAlignment(Qt.AlignCenter)
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
+        self.result_label.hide()
+        self.scroll_layout.addWidget(self.result_label)
+
+        # Устанавливаем контент в scroll area
+        self.scroll_area.setWidget(self.scroll_content)
+        # Добавляем scroll area в основной layout (от BaseTask)
+        self.layout.addWidget(self.scroll_area)
+
+        self.a = 0
+        self.b = 0
+        self.c = 0
+        self.correct_answer = 0
+
+        self.submit_btn.clicked.connect(self.check_answer)
+        self.next_btn.clicked.connect(self.reset_task)
 
     def append_to_input(self, char):
         current_text = self.input_field.text()
@@ -675,7 +1250,7 @@ class Task4(BaseTask):
         # Вычисляем: a * |c + b|
         self.correct_answer = a * abs(c + b)
 
-        task_str = f"Найдите значение выражения {a} * |y + {b}| при y = {c}"
+        task_str = f"Найдите значение выражения {a} × |y + {b}| при y = {c}"
         self.label.setText(task_str)
         self.input_field.clear()
         self.result_label.clear()
@@ -687,13 +1262,13 @@ class Task4(BaseTask):
             user_input = float(self.input_field.text().replace(',', '.'))
             if user_input == self.correct_answer:
                 self.result_label.setText("Правильно!")
-                self.result_label.setStyleSheet("color: green; font-size:60px;")
+                self.result_label.setStyleSheet(f"color: green; font-size:{int(60 * self.text_scale)}px;")
             else:
                 self.result_label.setText(f"Неправильно. Правильный ответ: {self.correct_answer}")
-                self.result_label.setStyleSheet("color: red; font-size: 60px;")
+                self.result_label.setStyleSheet(f"color: red; font-size: {int(60 * self.text_scale)}px;")
         except ValueError:
             self.result_label.setText("Введите число.")
-            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
+            self.result_label.setStyleSheet(f"color: orange; font-size: {int(60 * self.text_scale)}px;")
 
         self.result_label.show()
         self.submit_btn.setEnabled(False)
@@ -707,65 +1282,249 @@ class Task4(BaseTask):
         self.input_field.clear()
         self.generate_task()
 
-class Task5(BaseTask):
-    def __init__(self):
-        super().__init__()
-        self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
-        self.label.setAlignment(Qt.AlignCenter)
+    def apply_text_scaling(self, scale):
+        self.text_scale = scale
         font = QFont()
-        font.setPointSize(60)
+        font.setPointSize(int(60 * self.text_scale))
         self.label.setFont(font)
+        line_edit_style = f"""
+        QLineEdit {{
+            background-color: white;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            padding: 8px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            width: {int(300 * self.text_scale)}px;
+            height: {int(60 * self.text_scale)}px;
+        }}
+        QLineEdit:focus {{
+            border: 2px solid #007acc;
+        }}
+        """
+        self.input_field.setStyleSheet(line_edit_style)
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: #ffffff;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                    padding: 8px;
+                    font-size: {int(60 * self.text_scale)}px;
+                    color: black;
+                    min-width: {int(60 * self.ui_scale)}px;
+                    min-height: {int(60 * self.ui_scale)}px;
+                }}
+                QPushButton:hover {{
+                    background-color: #f5f5f5;
+                }}
+                """)
+        self.submit_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.submit_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.next_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.next_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
 
-        self.input_field = QLineEdit()
-        self.input_field.setAlignment(Qt.AlignCenter)
-
-        # Стиль поля ввода
-        self.input_field.setStyleSheet("""
-            QLineEdit {
-                background-color: white;
-                border: 2px solid #ccc;
-                border-radius: 8px;
-                padding: 8px;
-                font-size:60px;
-                color: black;
-            }
-            QLineEdit:focus {
-                border: 2px solid #007acc;
-            }
+    def apply_ui_scaling(self, scale):
+        self.ui_scale = scale
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: #ffffff;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                    padding: 8px;
+                    font-size: {int(60 * self.text_scale)}px;
+                    color: black;
+                    min-width: {int(60 * self.ui_scale)}px;
+                    min-height: {int(60 * self.ui_scale)}px;
+                }}
+                QPushButton:hover {{
+                    background-color: #f5f5f5;
+                }}
+                """)
+        self.submit_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.next_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
         """)
 
-        self.result_label = QLabel("")
-        self.result_label.setAlignment(Qt.AlignCenter)
-        self.result_label.setStyleSheet("font-size: 60px;")
-        self.result_label.hide()
+class Task5(BaseTask):
+    def __init__(self, text_scale=1.0, ui_scale=1.0):
+        super().__init__(text_scale, ui_scale)
+        # Создаем ScrollArea
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("border: none;")
+        # Виджет внутри ScrollArea
+        self.scroll_content = QWidget()
+        self.scroll_layout = QVBoxLayout(self.scroll_content)
+        self.scroll_layout.setAlignment(Qt.AlignTop)
 
+        # Метка с длинным текстом задачи
+        self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
+        self.label.setAlignment(Qt.AlignCenter)
+        self.label.setWordWrap(True)  # Разрешить перенос строк
+        font = QFont()
+        font.setPointSize(int(60 * self.text_scale))
+        self.label.setFont(font)
+
+        # Добавляем метку в scroll_layout
+        self.scroll_layout.addWidget(self.label)
+
+        # Поле ввода ответа
+        self.input_field = QLineEdit()
+        self.input_field.setAlignment(Qt.AlignCenter)
+        # Стиль поля ввода
+        line_edit_style = f"""
+        QLineEdit {{
+            background-color: white;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            padding: 8px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            width: {int(300 * self.text_scale)}px;
+            height: {int(60 * self.text_scale)}px;
+        }}
+        QLineEdit:focus {{
+            border: 2px solid #007acc;
+        }}
+        """
+        self.input_field.setStyleSheet(line_edit_style)
+        self.scroll_layout.addWidget(self.input_field)
+
+        # Виртуальная клавиатура
+        self.keyboard_layout = QGridLayout() # Сделаем его атрибутом класса
+        buttons = [
+            ['1', '2', '3'],
+            ['4', '5', '6'],
+            ['7', '8', '9'],
+            ['0', '-', ',']
+        ]
+        self.keyboard_buttons = [] # Список кнопок клавиатуры
+        for i, row in enumerate(buttons):
+            button_row = []
+            for j, char in enumerate(row):
+                btn = QPushButton(char)
+                btn.clicked.connect(lambda _, s=char: self.append_to_input(s))
+                btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: #ffffff;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                    padding: 8px;
+                    font-size: {int(60 * self.text_scale)}px;
+                    color: black;
+                    min-width: {int(60 * self.ui_scale)}px;
+                    min-height: {int(60 * self.ui_scale)}px;
+                }}
+                QPushButton:hover {{
+                    background-color: #f5f5f5;
+                }}
+                """)
+                self.keyboard_layout.addWidget(btn, i, j)
+                button_row.append(btn)
+            self.keyboard_buttons.append(button_row)
+        self.scroll_layout.addLayout(self.keyboard_layout)
+
+        # Кнопки
         self.submit_btn = QPushButton("Проверить")
         self.next_btn = QPushButton("Продолжить")
         self.next_btn.setVisible(False)
-
-        # Стиль кнопок
-        button_style = """
-            QPushButton {
-                background-color: #f0f0f0;
-                border: 1px solid #ccc;
-                border-radius: 6px;
-                padding: 8px 16px;
-                font-size: 60px;
-                color: black;
-            }
-            QPushButton:hover {
-                background-color: #e0e0e0;
-            }
-            QPushButton:pressed {
-                background-color: #d0d0d0;
-            }
-            QPushButton:disabled {
-                background-color: #cccccc;
-                color: #888888;
-            }
+        button_style = f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        QPushButton:pressed {{
+            background-color: #d0d0d0;
+        }}
+        QPushButton:disabled {{
+            background-color: #cccccc;
+            color: #888888;
+        }}
         """
         self.submit_btn.setStyleSheet(button_style)
         self.next_btn.setStyleSheet(button_style)
+        self.scroll_layout.addWidget(self.submit_btn)
+        self.scroll_layout.addWidget(self.next_btn)
+
+        # Результат
+        self.result_label = QLabel("")
+        self.result_label.setAlignment(Qt.AlignCenter)
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
+        self.result_label.hide()
+        self.scroll_layout.addWidget(self.result_label)
+
+        # Устанавливаем контент в scroll area
+        self.scroll_area.setWidget(self.scroll_content)
+        # Добавляем scroll area в основной layout (от BaseTask)
+        self.layout.addWidget(self.scroll_area)
 
         self.a = 0
         self.b = 0
@@ -773,49 +1532,8 @@ class Task5(BaseTask):
         self.d = 0.0
         self.correct_answer = 0.0
 
-        # Компоновка
-        layout = self.layout
-        layout.addWidget(self.label)
-        layout.addSpacing(20) 
-        layout.addWidget(self.input_field)
-        self.setup_virtual_keyboard()
-        layout.addWidget(self.submit_btn)
-        layout.addWidget(self.result_label)
-        layout.addWidget(self.next_btn)
-
         self.submit_btn.clicked.connect(self.check_answer)
         self.next_btn.clicked.connect(self.reset_task)
-
-    def setup_virtual_keyboard(self):
-        keyboard_layout = QGridLayout()
-
-        buttons = [
-            ['1', '2', '3'],
-            ['4', '5', '6'],
-            ['7', '8', '9'],
-            ['0', '-', ',']
-        ]
-
-        for i, row in enumerate(buttons):
-            for j, char in enumerate(row):
-                btn = QPushButton(char)
-                btn.clicked.connect(lambda _, s=char: self.append_to_input(s))
-                btn.setStyleSheet("""
-                    QPushButton {
-                        background-color: #ffffff;
-                        border: 1px solid #ddd;
-                        border-radius: 6px;
-                        padding: 8px;
-                        font-size: 60px;
-                        color: black;
-                    }
-                    QPushButton:hover {
-                        background-color: #f5f5f5;
-                    }
-                """)
-                keyboard_layout.addWidget(btn, i, j)
-
-        self.layout.addLayout(keyboard_layout)
 
     def append_to_input(self, char):
         current_text = self.input_field.text()
@@ -861,13 +1579,13 @@ class Task5(BaseTask):
             user_input = float(self.input_field.text().replace(',', '.'))
             if abs(user_input - self.correct_answer) < 1e-9:
                 self.result_label.setText("Правильно!")
-                self.result_label.setStyleSheet("color: green; font-size:60px;")
+                self.result_label.setStyleSheet(f"color: green; font-size:{int(60 * self.text_scale)}px;")
             else:
                 self.result_label.setText(f"Неправильно. Правильный ответ: {self.correct_answer:.1f}")
-                self.result_label.setStyleSheet("color: red; font-size: 60px;")
+                self.result_label.setStyleSheet(f"color: red; font-size: {int(60 * self.text_scale)}px;")
         except ValueError:
             self.result_label.setText("Введите число.")
-            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
+            self.result_label.setStyleSheet(f"color: orange; font-size: {int(60 * self.text_scale)}px;")
 
         self.result_label.show()
         self.submit_btn.setEnabled(False)
@@ -881,91 +1599,221 @@ class Task5(BaseTask):
         self.input_field.clear()
         self.generate_task()
 
-class Task6(BaseTask):
-    def __init__(self):
-        super().__init__()
+    def apply_text_scaling(self, scale):
+        self.text_scale = scale
+        font = QFont()
+        font.setPointSize(int(60 * self.text_scale))
+        self.label.setFont(font)
+        line_edit_style = f"""
+        QLineEdit {{
+            background-color: white;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            padding: 8px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            width: {int(300 * self.text_scale)}px;
+            height: {int(60 * self.text_scale)}px;
+        }}
+        QLineEdit:focus {{
+            border: 2px solid #007acc;
+        }}
+        """
+        self.input_field.setStyleSheet(line_edit_style)
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: #ffffff;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                    padding: 8px;
+                    font-size: {int(60 * self.text_scale)}px;
+                    color: black;
+                    min-width: {int(60 * self.ui_scale)}px;
+                    min-height: {int(60 * self.ui_scale)}px;
+                }}
+                QPushButton:hover {{
+                    background-color: #f5f5f5;
+                }}
+                """)
+        self.submit_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.submit_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.next_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.next_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
 
-        # Центральный фрейм
-        self.central_frame = QFrame()
-        central_layout = QVBoxLayout()
-        central_layout.setAlignment(Qt.AlignCenter)
+    def apply_ui_scaling(self, scale):
+        self.ui_scale = scale
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: #ffffff;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                    padding: 8px;
+                    font-size: {int(60 * self.text_scale)}px;
+                    color: black;
+                    min-width: {int(60 * self.ui_scale)}px;
+                    min-height: {int(60 * self.ui_scale)}px;
+                }}
+                QPushButton:hover {{
+                    background-color: #f5f5f5;
+                }}
+                """)
+        self.submit_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.next_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+
+class Task6(BaseTask):
+    def __init__(self, text_scale=1.0, ui_scale=1.0):
+        super().__init__(text_scale, ui_scale)
+
+        # Создаем ScrollArea
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("border: none;")
+        # Виджет внутри ScrollArea
+        self.scroll_content = QWidget()
+        self.scroll_layout = QVBoxLayout(self.scroll_content)
+        self.scroll_layout.setAlignment(Qt.AlignTop)
 
         # Метка с длинным текстом задачи
         self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
         self.label.setAlignment(Qt.AlignCenter)
         self.label.setWordWrap(True)  # Разрешить перенос строк
         font = QFont()
-        font.setPointSize(60)
+        font.setPointSize(int(60 * self.text_scale))
         self.label.setFont(font)
+
+        # Добавляем метку в scroll_layout
+        self.scroll_layout.addWidget(self.label)
 
         # Поле ввода ответа
         self.input_field = QLineEdit()
         self.input_field.setAlignment(Qt.AlignCenter)
 
         # Стиль поля ввода
-        self.input_field.setStyleSheet("""
-            QLineEdit {
+        line_edit_style = f"""
+            QLineEdit {{
                 background-color: white;
                 border: 2px solid #ccc;
                 border-radius: 8px;
                 padding: 8px;
-                font-size: 60px;
+                font-size: {int(60 * self.text_scale)}px;
                 color: black;
-            }
-            QLineEdit:focus {
+            }}
+            QLineEdit:focus {{
                 border: 2px solid #007acc;
-            }
-        """)
+            }}
+        """
+        self.input_field.setStyleSheet(line_edit_style)
+        self.scroll_layout.addWidget(self.input_field)
+
+        # Виртуальная клавиатура
+        self.keyboard_layout = QGridLayout() # Сделаем его атрибутом класса
+        self.keyboard_buttons = [] # Список кнопок клавиатуры
+        self.setup_virtual_keyboard()
 
         # Результат
         self.result_label = QLabel("")
         self.result_label.setAlignment(Qt.AlignCenter)
-        self.result_label.setStyleSheet("font-size: 60px;")
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
         self.result_label.hide()
+        self.scroll_layout.addWidget(self.result_label)
 
         # Кнопки
         self.submit_btn = QPushButton("Проверить")
         self.next_btn = QPushButton("Продолжить")
         self.next_btn.setVisible(False)
 
-        button_style = """
-            QPushButton {
+        button_style = f"""
+            QPushButton {{
                 background-color: #f0f0f0;
                 border: 1px solid #ccc;
                 border-radius: 6px;
                 padding: 8px 16px;
-                font-size: 60px;
+                font-size: {int(60 * self.text_scale)}px;
                 color: black;
-            }
-            QPushButton:hover {
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
                 background-color: #e0e0e0;
-            }
-            QPushButton:pressed {
+            }}
+            QPushButton:pressed {{
                 background-color: #d0d0d0;
-            }
-            QPushButton:disabled {
+            }}
+            QPushButton:disabled {{
                 background-color: #cccccc;
                 color: #888888;
-            }
+            }}
         """
         self.submit_btn.setStyleSheet(button_style)
         self.next_btn.setStyleSheet(button_style)
+        self.scroll_layout.addWidget(self.submit_btn)
+        self.scroll_layout.addWidget(self.next_btn)
 
-        # Виртуальная клавиатура
-        self.keyboard_layout = QGridLayout()
-        self.setup_virtual_keyboard()
-
-        # Компоновка
-        central_layout.addWidget(self.label)
-        central_layout.addSpacing(20)
-        central_layout.addWidget(self.input_field)
-        central_layout.addLayout(self.keyboard_layout)
-        central_layout.addWidget(self.submit_btn)
-        central_layout.addWidget(self.result_label)
-        central_layout.addWidget(self.next_btn)
-
-        self.central_frame.setLayout(central_layout)
-        self.layout.addWidget(self.central_frame)
+        # Устанавливаем контент в scroll area
+        self.scroll_area.setWidget(self.scroll_content)
+        # Добавляем scroll area в основной layout (от BaseTask)
+        self.layout.addWidget(self.scroll_area)
 
         self.submit_btn.clicked.connect(self.check_answer)
         self.next_btn.clicked.connect(self.reset_task)
@@ -978,23 +1826,29 @@ class Task6(BaseTask):
             ['0', '-', ',']
         ]
         for i, row in enumerate(buttons):
+            button_row = []
             for j, char in enumerate(row):
                 btn = QPushButton(char)
                 btn.clicked.connect(lambda _, s=char: self.append_to_input(s))
-                btn.setStyleSheet("""
-                    QPushButton {
+                btn.setStyleSheet(f"""
+                    QPushButton {{
                         background-color: #ffffff;
                         border: 1px solid #ddd;
                         border-radius: 6px;
                         padding: 8px;
-                        font-size: 60px;
+                        font-size: {int(60 * self.text_scale)}px;
                         color: black;
-                    }
-                    QPushButton:hover {
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
                         background-color: #f5f5f5;
-                    }
+                    }}
                 """)
                 self.keyboard_layout.addWidget(btn, i, j)
+                button_row.append(btn)
+            self.keyboard_buttons.append(button_row)
+        self.scroll_layout.addLayout(self.keyboard_layout) # Добавляем лэйаут клавиатуры в scroll_layout
 
     def append_to_input(self, char):
         current_text = self.input_field.text()
@@ -1070,13 +1924,13 @@ class Task6(BaseTask):
             user_input = float(self.input_field.text().replace(',', '.'))
             if abs(user_input - self.correct_answer) < 1e-9:
                 self.result_label.setText("Правильно!")
-                self.result_label.setStyleSheet("color: green; font-size:60px;")
+                self.result_label.setStyleSheet(f"color: green; font-size:{int(60 * self.text_scale)}px;")
             else:
                 self.result_label.setText(f"Неправильно. Правильный ответ: {self.correct_answer:.1f}")
-                self.result_label.setStyleSheet("color: red; font-size: 60px;")
+                self.result_label.setStyleSheet(f"color: red; font-size: {int(60 * self.text_scale)}px;")
         except ValueError:
             self.result_label.setText("Введите число.")
-            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
+            self.result_label.setStyleSheet(f"color: orange; font-size: {int(60 * self.text_scale)}px;")
 
         self.result_label.show()
         self.submit_btn.setEnabled(False)
@@ -1090,26 +1944,150 @@ class Task6(BaseTask):
         self.input_field.clear()
         self.generate_task()
 
-class Task7(BaseTask):
-    def __init__(self):
-        super().__init__()
+    def apply_text_scaling(self, scale):
+        self.text_scale = scale
+        font = QFont()
+        font.setPointSize(int(60 * self.text_scale))
+        self.label.setFont(font)
+        line_edit_style = f"""
+            QLineEdit {{
+                background-color: white;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+                padding: 8px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+            }}
+            QLineEdit:focus {{
+                border: 2px solid #007acc;
+            }}
+        """
+        self.input_field.setStyleSheet(line_edit_style)
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: {int(60 * self.text_scale)}px;
+                        color: black;
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: #f5f5f5;
+                    }}
+                """)
+        self.submit_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.submit_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.next_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.next_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
 
-        # Центральный фрейм
-        self.central_frame = QFrame()
-        central_layout = QVBoxLayout()
-        central_layout.setAlignment(Qt.AlignCenter)
+    def apply_ui_scaling(self, scale):
+        self.ui_scale = scale
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: {int(60 * self.text_scale)}px;
+                        color: black;
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: #f5f5f5;
+                    }}
+                """)
+        self.submit_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.next_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+
+class Task7(BaseTask):
+    def __init__(self, text_scale=1.0, ui_scale=1.0):
+        super().__init__(text_scale, ui_scale)
+
+        # Создаем ScrollArea
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("border: none;")
+        # Виджет внутри ScrollArea
+        self.scroll_content = QWidget()
+        self.scroll_layout = QVBoxLayout(self.scroll_content)
+        self.scroll_layout.setAlignment(Qt.AlignTop)
 
         # Заголовок
         self.label = QLabel("")
         self.label.setAlignment(Qt.AlignCenter)
         font = QFont()
-        font.setPointSize(60)
+        font.setPointSize(int(60 * self.text_scale))
         self.label.setFont(font)
 
         # Отображение примера в виде дробей
         self.task_display = QLabel("")
         self.task_display.setAlignment(Qt.AlignCenter)
-        self.task_display.setStyleSheet("font-size: 60px;")
+        self.task_display.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
 
         # Поле ввода ответа в формате -1/N
         self.input_field = QLineEdit()
@@ -1117,25 +2095,26 @@ class Task7(BaseTask):
         self.input_field.setPlaceholderText("Несократимая обыкновенная дробь")
 
         # Стиль поля ввода
-        line_edit_style = """
-            QLineEdit {
+        line_edit_style = f"""
+            QLineEdit {{
                 background-color: white;
                 border: 2px solid #ccc;
                 border-radius: 8px;
                 padding: 8px;
-                font-size: 40px;
+                font-size: {int(40 * self.text_scale)}px;
                 color: black;
-                width: 200px;
-                height: 60px;
-            }
-            QLineEdit:focus {
+                width: {int(200 * self.text_scale)}px;
+                height: {int(60 * self.text_scale)}px;
+            }}
+            QLineEdit:focus {{
                 border: 2px solid #007acc;
-            }
+            }}
         """
         self.input_field.setStyleSheet(line_edit_style)
 
         # Виртуальная клавиатура (заменяем "," на "/")
-        keyboard_layout = QGridLayout()
+        self.keyboard_layout = QGridLayout() # Сделаем его атрибутом класса
+        self.keyboard_buttons = [] # Список кнопок клавиатуры
         buttons = [
             ['1', '2', '3'],
             ['4', '5', '6'],
@@ -1143,48 +2122,55 @@ class Task7(BaseTask):
             ['0', '-', '/']  # Заменяем запятую на "/"
         ]
         for i, row in enumerate(buttons):
+            button_row = []
             for j, char in enumerate(row):
                 btn = QPushButton(char)
                 btn.clicked.connect(lambda _, s=char: self.append_to_input(s))
-                btn.setStyleSheet("""
-                    QPushButton {
+                btn.setStyleSheet(f"""
+                    QPushButton {{
                         background-color: #ffffff;
                         border: 1px solid #ddd;
                         border-radius: 6px;
                         padding: 8px;
-                        font-size: 60px;
+                        font-size: {int(60 * self.text_scale)}px;
                         color: black;
-                    }
-                    QPushButton:hover {
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
                         background-color: #f5f5f5;
-                    }
+                    }}
                 """)
-                keyboard_layout.addWidget(btn, i, j)
+                self.keyboard_layout.addWidget(btn, i, j)
+                button_row.append(btn)
+            self.keyboard_buttons.append(button_row)
 
         # Кнопки
         self.submit_btn = QPushButton("Проверить")
         self.next_btn = QPushButton("Продолжить")
         self.next_btn.setVisible(False)
 
-        button_style = """
-            QPushButton {
+        button_style = f"""
+            QPushButton {{
                 background-color: #f0f0f0;
                 border: 1px solid #ccc;
                 border-radius: 6px;
                 padding: 8px 16px;
-                font-size: 60px;
+                font-size: {int(60 * self.text_scale)}px;
                 color: black;
-            }
-            QPushButton:hover {
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
                 background-color: #e0e0e0;
-            }
-            QPushButton:pressed {
+            }}
+            QPushButton:pressed {{
                 background-color: #d0d0d0;
-            }
-            QPushButton:disabled {
+            }}
+            QPushButton:disabled {{
                 background-color: #cccccc;
                 color: #888888;
-            }
+            }}
         """
         self.submit_btn.setStyleSheet(button_style)
         self.next_btn.setStyleSheet(button_style)
@@ -1192,21 +2178,23 @@ class Task7(BaseTask):
         # Результат
         self.result_label = QLabel("")
         self.result_label.setAlignment(Qt.AlignCenter)
-        self.result_label.setStyleSheet("font-size: 60px;")
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
         self.result_label.hide()
 
-        # Компоновка
-        central_layout.addWidget(self.label)
-        central_layout.addWidget(self.task_display)
-        central_layout.addSpacing(20)
-        central_layout.addWidget(self.input_field)
-        central_layout.addLayout(keyboard_layout)
-        central_layout.addWidget(self.submit_btn)
-        central_layout.addWidget(self.result_label)
-        central_layout.addWidget(self.next_btn)
+        # Компоновка в scroll_layout
+        self.scroll_layout.addWidget(self.label)
+        self.scroll_layout.addWidget(self.task_display)
+        self.scroll_layout.addSpacing(int(20 * self.text_scale))
+        self.scroll_layout.addWidget(self.input_field)
+        self.scroll_layout.addLayout(self.keyboard_layout)
+        self.scroll_layout.addWidget(self.submit_btn)
+        self.scroll_layout.addWidget(self.result_label)
+        self.scroll_layout.addWidget(self.next_btn)
 
-        self.central_frame.setLayout(central_layout)
-        self.layout.addWidget(self.central_frame)
+        # Устанавливаем контент в scroll area
+        self.scroll_area.setWidget(self.scroll_content)
+        # Добавляем scroll area в основной layout (от BaseTask)
+        self.layout.addWidget(self.scroll_area)
 
         self.submit_btn.clicked.connect(self.check_answer)
         self.next_btn.clicked.connect(self.reset_task)
@@ -1302,7 +2290,7 @@ class Task7(BaseTask):
         # Формируем HTML-строку для отображения
         task_html = f"""
         <div style="text-align: center;">
-        <span style="font-size: 60px;">
+        <span style="font-size: {int(60 * self.text_scale)}px;">
         1<sup>{frac_b.numerator}</sup>&frasl;<sub>{frac_b.denominator}</sub> &times; (<sup>{frac_v.numerator}</sup>&frasl;<sub>{frac_v.denominator}</sub> + <sup>{frac_g.numerator}</sup>&frasl;<sub>{frac_g.denominator}</sub>) &minus; <sup>{frac_d.numerator}</sup>&frasl;<sub>{frac_d.denominator}</sub> &divide; {e}
         </span>
         </div>
@@ -1330,16 +2318,16 @@ class Task7(BaseTask):
             user_frac = Fraction(num, den)
         except ValueError:
             self.result_label.setText("Введите дробь в формате -1/N")
-            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
+            self.result_label.setStyleSheet(f"color: orange; font-size: {int(60 * self.text_scale)}px;")
             self.result_label.show()
             return
 
         if user_frac == self.correct_answer:
             self.result_label.setText("Правильно!")
-            self.result_label.setStyleSheet("color: green; font-size: 60px;")
+            self.result_label.setStyleSheet(f"color: green; font-size: {int(60 * self.text_scale)}px;")
         else:
             self.result_label.setText(f"Неправильно. Правильный ответ: {self.correct_answer}")
-            self.result_label.setStyleSheet("color: red; font-size: 60px;")
+            self.result_label.setStyleSheet(f"color: red; font-size: {int(60 * self.text_scale)}px;")
 
         self.result_label.show()
         self.submit_btn.setEnabled(False)
@@ -1352,91 +2340,223 @@ class Task7(BaseTask):
         self.result_label.hide()
         self.input_field.clear()
         self.generate_task()
-class Task8(BaseTask):
-    def __init__(self):
-        super().__init__()
 
-        # Центральный фрейм
-        self.central_frame = QFrame()
-        central_layout = QVBoxLayout()
-        central_layout.setAlignment(Qt.AlignCenter)
+    def apply_text_scaling(self, scale):
+        self.text_scale = scale
+        font = QFont()
+        font.setPointSize(int(60 * self.text_scale))
+        self.label.setFont(font)
+        self.task_display.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
+        line_edit_style = f"""
+            QLineEdit {{
+                background-color: white;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+                padding: 8px;
+                font-size: {int(40 * self.text_scale)}px;
+                color: black;
+                width: {int(200 * self.text_scale)}px;
+                height: {int(60 * self.text_scale)}px;
+            }}
+            QLineEdit:focus {{
+                border: 2px solid #007acc;
+            }}
+        """
+        self.input_field.setStyleSheet(line_edit_style)
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: {int(60 * self.text_scale)}px;
+                        color: black;
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: #f5f5f5;
+                    }}
+                """)
+        self.submit_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.submit_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.next_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.next_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
+
+    def apply_ui_scaling(self, scale):
+        self.ui_scale = scale
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: {int(60 * self.text_scale)}px;
+                        color: black;
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: #f5f5f5;
+                    }}
+                """)
+        self.submit_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.next_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+
+class Task8(BaseTask):
+    def __init__(self, text_scale=1.0, ui_scale=1.0):
+        super().__init__(text_scale, ui_scale)
+
+        # Создаем ScrollArea
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("border: none;")
+        # Виджет внутри ScrollArea
+        self.scroll_content = QWidget()
+        self.scroll_layout = QVBoxLayout(self.scroll_content)
+        self.scroll_layout.setAlignment(Qt.AlignTop)
 
         # Метка с длинным текстом задачи
         self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
         self.label.setAlignment(Qt.AlignCenter)
         self.label.setWordWrap(True)  # Разрешить перенос строк
         font = QFont()
-        font.setPointSize(60)
+        font.setPointSize(int(60 * self.text_scale))
         self.label.setFont(font)
+
+        # Добавляем метку в scroll_layout
+        self.scroll_layout.addWidget(self.label)
 
         # Поле ввода ответа
         self.input_field = QLineEdit()
         self.input_field.setAlignment(Qt.AlignCenter)
 
         # Стиль поля ввода
-        self.input_field.setStyleSheet("""
-            QLineEdit {
+        line_edit_style = f"""
+            QLineEdit {{
                 background-color: white;
                 border: 2px solid #ccc;
                 border-radius: 8px;
                 padding: 8px;
-                font-size: 60px;
+                font-size: {int(60 * self.text_scale)}px;
                 color: black;
-            }
-            QLineEdit:focus {
+            }}
+            QLineEdit:focus {{
                 border: 2px solid #007acc;
-            }
-        """)
+            }}
+        """
+        self.input_field.setStyleSheet(line_edit_style)
+        self.scroll_layout.addWidget(self.input_field)
+
+        # Виртуальная клавиатура
+        self.keyboard_layout = QGridLayout() # Сделаем его атрибутом класса
+        self.keyboard_buttons = [] # Список кнопок клавиатуры
+        self.setup_virtual_keyboard()
 
         # Результат
         self.result_label = QLabel("")
         self.result_label.setAlignment(Qt.AlignCenter)
-        self.result_label.setStyleSheet("font-size: 60px;")
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
         self.result_label.hide()
+        self.scroll_layout.addWidget(self.result_label)
 
         # Кнопки
         self.submit_btn = QPushButton("Проверить")
         self.next_btn = QPushButton("Продолжить")
         self.next_btn.setVisible(False)
 
-        button_style = """
-            QPushButton {
+        button_style = f"""
+            QPushButton {{
                 background-color: #f0f0f0;
                 border: 1px solid #ccc;
                 border-radius: 6px;
                 padding: 8px 16px;
-                font-size: 60px;
+                font-size: {int(60 * self.text_scale)}px;
                 color: black;
-            }
-            QPushButton:hover {
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
                 background-color: #e0e0e0;
-            }
-            QPushButton:pressed {
+            }}
+            QPushButton:pressed {{
                 background-color: #d0d0d0;
-            }
-            QPushButton:disabled {
+            }}
+            QPushButton:disabled {{
                 background-color: #cccccc;
                 color: #888888;
-            }
+            }}
         """
         self.submit_btn.setStyleSheet(button_style)
         self.next_btn.setStyleSheet(button_style)
+        self.scroll_layout.addWidget(self.submit_btn)
+        self.scroll_layout.addWidget(self.next_btn)
 
-        # Виртуальная клавиатура
-        self.keyboard_layout = QGridLayout()
-        self.setup_virtual_keyboard()
-
-        # Компоновка
-        central_layout.addWidget(self.label)
-        central_layout.addSpacing(20)
-        central_layout.addWidget(self.input_field)
-        central_layout.addLayout(self.keyboard_layout)
-        central_layout.addWidget(self.submit_btn)
-        central_layout.addWidget(self.result_label)
-        central_layout.addWidget(self.next_btn)
-
-        self.central_frame.setLayout(central_layout)
-        self.layout.addWidget(self.central_frame)
+        # Устанавливаем контент в scroll area
+        self.scroll_area.setWidget(self.scroll_content)
+        # Добавляем scroll area в основной layout (от BaseTask)
+        self.layout.addWidget(self.scroll_area)
 
         self.submit_btn.clicked.connect(self.check_answer)
         self.next_btn.clicked.connect(self.reset_task)
@@ -1449,23 +2569,29 @@ class Task8(BaseTask):
             ['0', '-', ',']
         ]
         for i, row in enumerate(buttons):
+            button_row = []
             for j, char in enumerate(row):
                 btn = QPushButton(char)
                 btn.clicked.connect(lambda _, s=char: self.append_to_input(s))
-                btn.setStyleSheet("""
-                    QPushButton {
+                btn.setStyleSheet(f"""
+                    QPushButton {{
                         background-color: #ffffff;
                         border: 1px solid #ddd;
                         border-radius: 6px;
                         padding: 8px;
-                        font-size: 60px;
+                        font-size: {int(60 * self.text_scale)}px;
                         color: black;
-                    }
-                    QPushButton:hover {
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
                         background-color: #f5f5f5;
-                    }
+                    }}
                 """)
                 self.keyboard_layout.addWidget(btn, i, j)
+                button_row.append(btn)
+            self.keyboard_buttons.append(button_row)
+        self.scroll_layout.addLayout(self.keyboard_layout) # Добавляем лэйаут клавиатуры в scroll_layout
 
     def append_to_input(self, char):
         current_text = self.input_field.text()
@@ -1510,13 +2636,13 @@ class Task8(BaseTask):
             user_input = int(self.input_field.text().strip())
             if user_input == self.y:
                 self.result_label.setText("Правильно!")
-                self.result_label.setStyleSheet("color: green; font-size:60px;")
+                self.result_label.setStyleSheet(f"color: green; font-size:{int(60 * self.text_scale)}px;")
             else:
                 self.result_label.setText(f"Неправильно. Правильный ответ: {self.y}")
-                self.result_label.setStyleSheet("color: red; font-size: 60px;")
+                self.result_label.setStyleSheet(f"color: red; font-size: {int(60 * self.text_scale)}px;")
         except ValueError:
             self.result_label.setText("Введите целое число.")
-            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
+            self.result_label.setStyleSheet(f"color: orange; font-size: {int(60 * self.text_scale)}px;")
 
         self.result_label.show()
         self.submit_btn.setEnabled(False)
@@ -1530,91 +2656,219 @@ class Task8(BaseTask):
         self.input_field.clear()
         self.generate_task()
 
-class Task9(BaseTask):
-    def __init__(self):
-        super().__init__()
+    def apply_text_scaling(self, scale):
+        self.text_scale = scale
+        font = QFont()
+        font.setPointSize(int(60 * self.text_scale))
+        self.label.setFont(font)
+        line_edit_style = f"""
+            QLineEdit {{
+                background-color: white;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+                padding: 8px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+            }}
+            QLineEdit:focus {{
+                border: 2px solid #007acc;
+            }}
+        """
+        self.input_field.setStyleSheet(line_edit_style)
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: {int(60 * self.text_scale)}px;
+                        color: black;
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: #f5f5f5;
+                    }}
+                """)
+        self.submit_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.submit_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.next_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.next_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
 
-        # Центральный фрейм
-        self.central_frame = QFrame()
-        central_layout = QVBoxLayout()
-        central_layout.setAlignment(Qt.AlignCenter)
+    def apply_ui_scaling(self, scale):
+        self.ui_scale = scale
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: {int(60 * self.text_scale)}px;
+                        color: black;
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: #f5f5f5;
+                    }}
+                """)
+        self.submit_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.next_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+
+class Task9(BaseTask):
+    def __init__(self, text_scale=1.0, ui_scale=1.0):
+        super().__init__(text_scale, ui_scale)
+
+        # Создаем ScrollArea
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("border: none;")
+        # Виджет внутри ScrollArea
+        self.scroll_content = QWidget()
+        self.scroll_layout = QVBoxLayout(self.scroll_content)
+        self.scroll_layout.setAlignment(Qt.AlignTop)
 
         # Метка с длинным текстом задачи
         self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
         self.label.setAlignment(Qt.AlignCenter)
         self.label.setWordWrap(True)  # Разрешить перенос строк
         font = QFont()
-        font.setPointSize(60)
+        font.setPointSize(int(60 * self.text_scale))
         self.label.setFont(font)
+
+        # Добавляем метку в scroll_layout
+        self.scroll_layout.addWidget(self.label)
 
         # Поле ввода ответа
         self.input_field = QLineEdit()
         self.input_field.setAlignment(Qt.AlignCenter)
 
         # Стиль поля ввода
-        self.input_field.setStyleSheet("""
-            QLineEdit {
+        line_edit_style = f"""
+            QLineEdit {{
                 background-color: white;
                 border: 2px solid #ccc;
                 border-radius: 8px;
                 padding: 8px;
-                font-size: 60px;
+                font-size: {int(60 * self.text_scale)}px;
                 color: black;
-            }
-            QLineEdit:focus {
+            }}
+            QLineEdit:focus {{
                 border: 2px solid #007acc;
-            }
-        """)
+            }}
+        """
+        self.input_field.setStyleSheet(line_edit_style)
+        self.scroll_layout.addWidget(self.input_field)
+
+        # Виртуальная клавиатура
+        self.keyboard_layout = QGridLayout() # Сделаем его атрибутом класса
+        self.keyboard_buttons = [] # Список кнопок клавиатуры
+        self.setup_virtual_keyboard()
 
         # Результат
         self.result_label = QLabel("")
         self.result_label.setAlignment(Qt.AlignCenter)
-        self.result_label.setStyleSheet("font-size: 60px;")
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
         self.result_label.hide()
+        self.scroll_layout.addWidget(self.result_label)
 
         # Кнопки
         self.submit_btn = QPushButton("Проверить")
         self.next_btn = QPushButton("Продолжить")
         self.next_btn.setVisible(False)
 
-        button_style = """
-            QPushButton {
+        button_style = f"""
+            QPushButton {{
                 background-color: #f0f0f0;
                 border: 1px solid #ccc;
                 border-radius: 6px;
                 padding: 8px 16px;
-                font-size: 60px;
+                font-size: {int(60 * self.text_scale)}px;
                 color: black;
-            }
-            QPushButton:hover {
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
                 background-color: #e0e0e0;
-            }
-            QPushButton:pressed {
+            }}
+            QPushButton:pressed {{
                 background-color: #d0d0d0;
-            }
-            QPushButton:disabled {
+            }}
+            QPushButton:disabled {{
                 background-color: #cccccc;
                 color: #888888;
-            }
+            }}
         """
         self.submit_btn.setStyleSheet(button_style)
         self.next_btn.setStyleSheet(button_style)
+        self.scroll_layout.addWidget(self.submit_btn)
+        self.scroll_layout.addWidget(self.next_btn)
 
-        # Виртуальная клавиатура
-        self.keyboard_layout = QGridLayout()
-        self.setup_virtual_keyboard()
-
-        # Компоновка
-        central_layout.addWidget(self.label)
-        central_layout.addSpacing(20)
-        central_layout.addWidget(self.input_field)
-        central_layout.addLayout(self.keyboard_layout)
-        central_layout.addWidget(self.submit_btn)
-        central_layout.addWidget(self.result_label)
-        central_layout.addWidget(self.next_btn)
-
-        self.central_frame.setLayout(central_layout)
-        self.layout.addWidget(self.central_frame)
+        # Устанавливаем контент в scroll area
+        self.scroll_area.setWidget(self.scroll_content)
+        # Добавляем scroll area в основной layout (от BaseTask)
+        self.layout.addWidget(self.scroll_area)
 
         self.submit_btn.clicked.connect(self.check_answer)
         self.next_btn.clicked.connect(self.reset_task)
@@ -1627,23 +2881,29 @@ class Task9(BaseTask):
             ['0', '-', ',']
         ]
         for i, row in enumerate(buttons):
+            button_row = []
             for j, char in enumerate(row):
                 btn = QPushButton(char)
                 btn.clicked.connect(lambda _, s=char: self.append_to_input(s))
-                btn.setStyleSheet("""
-                    QPushButton {
+                btn.setStyleSheet(f"""
+                    QPushButton {{
                         background-color: #ffffff;
                         border: 1px solid #ddd;
                         border-radius: 6px;
                         padding: 8px;
-                        font-size: 60px;
+                        font-size: {int(60 * self.text_scale)}px;
                         color: black;
-                    }
-                    QPushButton:hover {
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
                         background-color: #f5f5f5;
-                    }
+                    }}
                 """)
                 self.keyboard_layout.addWidget(btn, i, j)
+                button_row.append(btn)
+            self.keyboard_buttons.append(button_row)
+        self.scroll_layout.addLayout(self.keyboard_layout) # Добавляем лэйаут клавиатуры в scroll_layout
 
     def append_to_input(self, char):
         current_text = self.input_field.text()
@@ -1693,13 +2953,13 @@ class Task9(BaseTask):
             user_input = int(self.input_field.text().strip())
             if user_input == self.total:
                 self.result_label.setText("Правильно!")
-                self.result_label.setStyleSheet("color: green; font-size:60px;")
+                self.result_label.setStyleSheet(f"color: green; font-size:{int(60 * self.text_scale)}px;")
             else:
                 self.result_label.setText(f"Неправильно. Правильный ответ: {self.total}")
-                self.result_label.setStyleSheet("color: red; font-size: 60px;")
+                self.result_label.setStyleSheet(f"color: red; font-size: {int(60 * self.text_scale)}px;")
         except ValueError:
             self.result_label.setText("Введите целое число.")
-            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
+            self.result_label.setStyleSheet(f"color: orange; font-size: {int(60 * self.text_scale)}px;")
 
         self.result_label.show()
         self.submit_btn.setEnabled(False)
@@ -1713,91 +2973,219 @@ class Task9(BaseTask):
         self.input_field.clear()
         self.generate_task()
 
-class Task10(BaseTask):
-    def __init__(self):
-        super().__init__()
+    def apply_text_scaling(self, scale):
+        self.text_scale = scale
+        font = QFont()
+        font.setPointSize(int(60 * self.text_scale))
+        self.label.setFont(font)
+        line_edit_style = f"""
+            QLineEdit {{
+                background-color: white;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+                padding: 8px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+            }}
+            QLineEdit:focus {{
+                border: 2px solid #007acc;
+            }}
+        """
+        self.input_field.setStyleSheet(line_edit_style)
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: {int(60 * self.text_scale)}px;
+                        color: black;
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: #f5f5f5;
+                    }}
+                """)
+        self.submit_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.submit_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.next_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.next_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
 
-        # Центральный фрейм
-        self.central_frame = QFrame()
-        central_layout = QVBoxLayout()
-        central_layout.setAlignment(Qt.AlignCenter)
+    def apply_ui_scaling(self, scale):
+        self.ui_scale = scale
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: {int(60 * self.text_scale)}px;
+                        color: black;
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: #f5f5f5;
+                    }}
+                """)
+        self.submit_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.next_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+
+class Task10(BaseTask):
+    def __init__(self, text_scale=1.0, ui_scale=1.0):
+        super().__init__(text_scale, ui_scale)
+
+        # Создаем ScrollArea
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setStyleSheet("border: none;")
+        # Виджет внутри ScrollArea
+        self.scroll_content = QWidget()
+        self.scroll_layout = QVBoxLayout(self.scroll_content)
+        self.scroll_layout.setAlignment(Qt.AlignTop)
 
         # Метка с длинным текстом задачи
         self.label = QLabel("Нажмите 'Новый пример', чтобы начать.")
         self.label.setAlignment(Qt.AlignCenter)
         self.label.setWordWrap(True)  # Разрешить перенос строк
         font = QFont()
-        font.setPointSize(60)
+        font.setPointSize(int(60 * self.text_scale))
         self.label.setFont(font)
+
+        # Добавляем метку в scroll_layout
+        self.scroll_layout.addWidget(self.label)
 
         # Поле ввода ответа
         self.input_field = QLineEdit()
         self.input_field.setAlignment(Qt.AlignCenter)
 
         # Стиль поля ввода
-        self.input_field.setStyleSheet("""
-            QLineEdit {
+        line_edit_style = f"""
+            QLineEdit {{
                 background-color: white;
                 border: 2px solid #ccc;
                 border-radius: 8px;
                 padding: 8px;
-                font-size: 60px;
+                font-size: {int(60 * self.text_scale)}px;
                 color: black;
-            }
-            QLineEdit:focus {
+            }}
+            QLineEdit:focus {{
                 border: 2px solid #007acc;
-            }
-        """)
+            }}
+        """
+        self.input_field.setStyleSheet(line_edit_style)
+        self.scroll_layout.addWidget(self.input_field)
+
+        # Виртуальная клавиатура
+        self.keyboard_layout = QGridLayout() # Сделаем его атрибутом класса
+        self.keyboard_buttons = [] # Список кнопок клавиатуры
+        self.setup_virtual_keyboard()
 
         # Результат
         self.result_label = QLabel("")
         self.result_label.setAlignment(Qt.AlignCenter)
-        self.result_label.setStyleSheet("font-size: 60px;")
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
         self.result_label.hide()
+        self.scroll_layout.addWidget(self.result_label)
 
         # Кнопки
         self.submit_btn = QPushButton("Проверить")
         self.next_btn = QPushButton("Продолжить")
         self.next_btn.setVisible(False)
 
-        button_style = """
-            QPushButton {
+        button_style = f"""
+            QPushButton {{
                 background-color: #f0f0f0;
                 border: 1px solid #ccc;
                 border-radius: 6px;
                 padding: 8px 16px;
-                font-size: 60px;
+                font-size: {int(60 * self.text_scale)}px;
                 color: black;
-            }
-            QPushButton:hover {
+                min-width: {int(100 * self.ui_scale)}px;
+                min-height: {int(50 * self.ui_scale)}px;
+            }}
+            QPushButton:hover {{
                 background-color: #e0e0e0;
-            }
-            QPushButton:pressed {
+            }}
+            QPushButton:pressed {{
                 background-color: #d0d0d0;
-            }
-            QPushButton:disabled {
+            }}
+            QPushButton:disabled {{
                 background-color: #cccccc;
                 color: #888888;
-            }
+            }}
         """
         self.submit_btn.setStyleSheet(button_style)
         self.next_btn.setStyleSheet(button_style)
+        self.scroll_layout.addWidget(self.submit_btn)
+        self.scroll_layout.addWidget(self.next_btn)
 
-        # Виртуальная клавиатура
-        self.keyboard_layout = QGridLayout()
-        self.setup_virtual_keyboard()
-
-        # Компоновка
-        central_layout.addWidget(self.label)
-        central_layout.addSpacing(20)
-        central_layout.addWidget(self.input_field)
-        central_layout.addLayout(self.keyboard_layout)
-        central_layout.addWidget(self.submit_btn)
-        central_layout.addWidget(self.result_label)
-        central_layout.addWidget(self.next_btn)
-
-        self.central_frame.setLayout(central_layout)
-        self.layout.addWidget(self.central_frame)
+        # Устанавливаем контент в scroll area
+        self.scroll_area.setWidget(self.scroll_content)
+        # Добавляем scroll area в основной layout (от BaseTask)
+        self.layout.addWidget(self.scroll_area)
 
         self.submit_btn.clicked.connect(self.check_answer)
         self.next_btn.clicked.connect(self.reset_task)
@@ -1810,23 +3198,29 @@ class Task10(BaseTask):
             ['0', '-', ',']
         ]
         for i, row in enumerate(buttons):
+            button_row = []
             for j, char in enumerate(row):
                 btn = QPushButton(char)
                 btn.clicked.connect(lambda _, s=char: self.append_to_input(s))
-                btn.setStyleSheet("""
-                    QPushButton {
+                btn.setStyleSheet(f"""
+                    QPushButton {{
                         background-color: #ffffff;
                         border: 1px solid #ddd;
                         border-radius: 6px;
                         padding: 8px;
-                        font-size: 60px;
+                        font-size: {int(60 * self.text_scale)}px;
                         color: black;
-                    }
-                    QPushButton:hover {
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
                         background-color: #f5f5f5;
-                    }
+                    }}
                 """)
                 self.keyboard_layout.addWidget(btn, i, j)
+                button_row.append(btn)
+            self.keyboard_buttons.append(button_row)
+        self.scroll_layout.addLayout(self.keyboard_layout) # Добавляем лэйаут клавиатуры в scroll_layout
 
     def append_to_input(self, char):
         current_text = self.input_field.text()
@@ -1873,13 +3267,13 @@ class Task10(BaseTask):
             user_input = int(self.input_field.text().strip())
             if user_input == self.x:
                 self.result_label.setText("Правильно!")
-                self.result_label.setStyleSheet("color: green; font-size:60px;")
+                self.result_label.setStyleSheet(f"color: green; font-size:{int(60 * self.text_scale)}px;")
             else:
                 self.result_label.setText(f"Неправильно. Правильный ответ: {self.x}")
-                self.result_label.setStyleSheet("color: red; font-size: 60px;")
+                self.result_label.setStyleSheet(f"color: red; font-size: {int(60 * self.text_scale)}px;")
         except ValueError:
             self.result_label.setText("Введите целое число.")
-            self.result_label.setStyleSheet("color: orange; font-size: 60px;")
+            self.result_label.setStyleSheet(f"color: orange; font-size: {int(60 * self.text_scale)}px;")
 
         self.result_label.show()
         self.submit_btn.setEnabled(False)
@@ -1893,74 +3287,225 @@ class Task10(BaseTask):
         self.input_field.clear()
         self.generate_task()
 
+    def apply_text_scaling(self, scale):
+        self.text_scale = scale
+        font = QFont()
+        font.setPointSize(int(60 * self.text_scale))
+        self.label.setFont(font)
+        line_edit_style = f"""
+            QLineEdit {{
+                background-color: white;
+                border: 2px solid #ccc;
+                border-radius: 8px;
+                padding: 8px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+            }}
+            QLineEdit:focus {{
+                border: 2px solid #007acc;
+            }}
+        """
+        self.input_field.setStyleSheet(line_edit_style)
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: {int(60 * self.text_scale)}px;
+                        color: black;
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: #f5f5f5;
+                    }}
+                """)
+        self.submit_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.submit_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.next_btn.setFont(QFont("Arial", int(60 * self.text_scale)))
+        self.next_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
+
+    def apply_ui_scaling(self, scale):
+        self.ui_scale = scale
+        for row in self.keyboard_buttons:
+            for btn in row:
+                btn.setStyleSheet(f"""
+                    QPushButton {{
+                        background-color: #ffffff;
+                        border: 1px solid #ddd;
+                        border-radius: 6px;
+                        padding: 8px;
+                        font-size: {int(60 * self.text_scale)}px;
+                        color: black;
+                        min-width: {int(60 * self.ui_scale)}px;
+                        min-height: {int(60 * self.ui_scale)}px;
+                    }}
+                    QPushButton:hover {{
+                        background-color: #f5f5f5;
+                    }}
+                """)
+        self.submit_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+        self.next_btn.setStyleSheet(f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """)
+
+
 class MathTrainer(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.settings = QSettings("MathTrainer", "Settings")
+        # Загружаем сохраненные значения или используем по умолчанию
+        self.text_scale = self.settings.value("text_scale", 1.0, type=float)
+        self.ui_scale = self.settings.value("ui_scale", 1.0, type=float)
+
         self.setWindowTitle("Математический тренажёр 6 класс")
         self.setGeometry(200, 200, 600, 500)
 
         # Установка светлой темы для всего приложения
         self.setStyleSheet("""
-            QMainWindow {
-                background-color: #ffffff;
-            }
-            QWidget {
-                background-color: #ffffff;
-                color: black;
-                font-family: Arial, sans-serif;
-            }
-            QLabel {
-                color: black;
-                font-size:60px;
-            }
-            QPushButton {
-                background-color: #f0f0f0;
-                border: 1px solid #ccc;
-                border-radius: 6px;
-                padding: 8px 16px;
-                font-size: 60px;
-                color: black;
-            }
-            QPushButton:hover {
-                background-color: #e0e0e0;
-            }
-            QPushButton:pressed {
-                background-color: #d0d0d0;
-            }
-            QPushButton:disabled {
-                background-color: #cccccc;
-                color: #888888;
-            }
+        QMainWindow {
+            background-color: #ffffff;
+        }
+        QWidget {
+            background-color: #ffffff;
+            color: black;
+            font-family: Arial, sans-serif;
+        }
+        QLabel {
+            color: black;
+        }
+        QPushButton {
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            color: black;
+        }
+        QPushButton:hover {
+            background-color: #e0e0e0;
+        }
+        QPushButton:pressed {
+            background-color: #d0d0d0;
+        }
+        QPushButton:disabled {
+            background-color: #cccccc;
+            color: #888888;
+        }
         """)
 
         main_widget = QWidget()
         self.setCentralWidget(main_widget)
-
         layout = QVBoxLayout()
 
-        # Панель с кнопками заданий
+        # Панель с кнопками заданий и кнопкой настроек
         top_bar = QHBoxLayout()
         top_bar.setAlignment(Qt.AlignCenter)
+
+        # Кнопка настроек
+        self.settings_btn = QPushButton("Настройки")
+        self.settings_btn.clicked.connect(self.open_settings)
+        # Применяем масштабирование к кнопке настроек
+        settings_btn_style = f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px; /* Шрифт */
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px; /* Размер */
+            min-height: {int(50 * self.ui_scale)}px; /* Размер */
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """
+        self.settings_btn.setStyleSheet(settings_btn_style)
+        top_bar.addWidget(self.settings_btn)
+
+        # Кнопки выбора задания
         self.task_buttons = []
         for i in range(1, 11):
             btn = QPushButton(str(i))
             btn.setCheckable(True)
             btn.clicked.connect(lambda checked, n=i: self.select_task(n))
-            btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #ffffff;
-                    border: 1px solid #ccc;
-                    border-radius: 6px;
-                    padding: 6px 22px;
-                    font-size: 60px;
-                    color: black;
-                }
-                QPushButton:checked {
-                    background-color: #007acc;
-                    color: white;
-                    border: 1px solid #005fa3;
-                }
-            """)
+            # Применяем масштабирование к кнопке задания
+            task_btn_style = f"""
+            QPushButton {{
+                background-color: #ffffff;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 6px 22px;
+                font-size: {int(60 * self.text_scale)}px; /* Шрифт */
+                color: black;
+                min-width: {int(50 * self.ui_scale)}px; /* Размер */
+                min-height: {int(40 * self.ui_scale)}px; /* Размер */
+            }}
+            QPushButton:checked {{
+                background-color: #007acc;
+                color: white;
+                border: 1px solid #005fa3;
+            }}
+            """
+            btn.setStyleSheet(task_btn_style)
             top_bar.addWidget(btn)
             self.task_buttons.append(btn)
 
@@ -1973,21 +3518,127 @@ class MathTrainer(QMainWindow):
 
         main_widget.setLayout(layout)
 
-        # Создаём экземпляры заданий
+        # Создаём экземпляры заданий с начальным масштабом
         self.tasks = [None] * 10
-        self.tasks[0] = Task1()
-        self.tasks[1] = Task2() 
-        self.tasks[2] = Task3() 
-        self.tasks[3] = Task4() 
-        self.tasks[4] = Task5() 
-        self.tasks[5] = Task6() 
-        self.tasks[6] = Task7()
-        self.tasks[7] = Task8() 
-        self.tasks[8] = Task9() 
-        self.tasks[9] = Task10() 
+        self.tasks[0] = Task1(text_scale=self.text_scale, ui_scale=self.ui_scale)
+        self.tasks[1] = Task2(text_scale=self.text_scale, ui_scale=self.ui_scale)
+        self.tasks[2] = Task3(text_scale=self.text_scale, ui_scale=self.ui_scale)
+        self.tasks[3] = Task4(text_scale=self.text_scale, ui_scale=self.ui_scale)
+        self.tasks[4] = Task5(text_scale=self.text_scale, ui_scale=self.ui_scale)
+        self.tasks[5] = Task6(text_scale=self.text_scale, ui_scale=self.ui_scale)
+        self.tasks[6] = Task7(text_scale=self.text_scale, ui_scale=self.ui_scale)
+        self.tasks[7] = Task8(text_scale=self.text_scale, ui_scale=self.ui_scale)
+        self.tasks[8] = Task9(text_scale=self.text_scale, ui_scale=self.ui_scale)
+        self.tasks[9] = Task10(text_scale=self.text_scale, ui_scale=self.ui_scale)
 
         self.current_task_widget = None
         self.select_task(1)
+
+    def open_settings(self):
+        dialog = SettingsDialog(self, self.text_scale, self.ui_scale)
+        if dialog.exec_() == QDialog.Accepted:
+            # Значения уже применены через сигналы при изменении ползунков
+            # Но мы можем получить их снова для сохранения
+            new_text_scale, new_ui_scale = dialog.get_values()
+            self.text_scale = new_text_scale
+            self.ui_scale = new_ui_scale
+            # Сохраняем в настройки
+            self.settings.setValue("text_scale", self.text_scale)
+            self.settings.setValue("ui_scale", self.ui_scale)
+            # Обновляем кнопки на панели
+            self.apply_text_scaling(self.text_scale)
+            self.apply_ui_scaling(self.ui_scale)
+
+
+    def apply_text_scaling(self, scale):
+        self.text_scale = scale
+        # Обновить стиль кнопки настроек
+        settings_btn_style = f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """
+        self.settings_btn.setStyleSheet(settings_btn_style)
+
+        # Обновить стиль кнопок заданий
+        for btn in self.task_buttons:
+            task_btn_style = f"""
+            QPushButton {{
+                background-color: #ffffff;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 6px 22px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+                min-width: {int(50 * self.ui_scale)}px;
+                min-height: {int(40 * self.ui_scale)}px;
+            }}
+            QPushButton:checked {{
+                background-color: #007acc;
+                color: white;
+                border: 1px solid #005fa3;
+            }}
+            """
+            btn.setStyleSheet(task_btn_style)
+
+        # Обновить текущее задание
+        if self.current_task_widget:
+            self.current_task_widget.apply_text_scaling(scale)
+
+    def apply_ui_scaling(self, scale):
+        self.ui_scale = scale
+        # Обновить стиль кнопки настроек
+        settings_btn_style = f"""
+        QPushButton {{
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            padding: 8px 16px;
+            font-size: {int(60 * self.text_scale)}px;
+            color: black;
+            min-width: {int(100 * self.ui_scale)}px;
+            min-height: {int(50 * self.ui_scale)}px;
+        }}
+        QPushButton:hover {{
+            background-color: #e0e0e0;
+        }}
+        """
+        self.settings_btn.setStyleSheet(settings_btn_style)
+
+        # Обновить стиль кнопок заданий
+        for btn in self.task_buttons:
+            task_btn_style = f"""
+            QPushButton {{
+                background-color: #ffffff;
+                border: 1px solid #ccc;
+                border-radius: 6px;
+                padding: 6px 22px;
+                font-size: {int(60 * self.text_scale)}px;
+                color: black;
+                min-width: {int(50 * self.ui_scale)}px;
+                min-height: {int(40 * self.ui_scale)}px;
+            }}
+            QPushButton:checked {{
+                background-color: #007acc;
+                color: white;
+                border: 1px solid #005fa3;
+            }}
+            """
+            btn.setStyleSheet(task_btn_style)
+
+        # Обновить текущее задание
+        if self.current_task_widget:
+            self.current_task_widget.apply_ui_scaling(scale)
 
     def select_task(self, index):
         # Сбросить предыдущее состояние
@@ -2001,18 +3652,20 @@ class MathTrainer(QMainWindow):
         task_idx = index - 1
         if 0 <= task_idx < len(self.tasks) and self.tasks[task_idx]:
             self.current_task_widget = self.tasks[task_idx]
+            # Применить масштабирование при переключении
+            self.current_task_widget.apply_text_scaling(self.text_scale)
+            self.current_task_widget.apply_ui_scaling(self.ui_scale)
             self.current_task_widget.generate_task()  # Новый пример при выборке
             self.content_area.addWidget(self.current_task_widget)
 
-        # Обновить активную кнопку
-        for btn in self.task_buttons:
-            btn.setChecked(False)
-        self.task_buttons[index - 1].setChecked(True)
+            # Обновить активную кнопку
+            for btn in self.task_buttons:
+                btn.setChecked(False)
+            self.task_buttons[index - 1].setChecked(True)
 
 
 def main():
     app = QApplication(sys.argv)
-    
     # Дополнительно: принудительно установить светлую палитру
     palette = QPalette()
     palette.setColor(QPalette.Window, QColor(255, 255, 255))
