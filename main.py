@@ -422,13 +422,22 @@ class Task2(BaseTask):
 
         # Поля для ответа (числитель и знаменатель)
         self.answer_num = QLineEdit()  # числитель
+        self.answer_num.setPlaceholderText("Числитель")
+        self.answer_num.setAlignment(Qt.AlignCenter)
+        # Устанавливаем фокус в числитель при создании
+        self.answer_num.setFocus()
+        self.last_active_field = self.answer_num # Запоминаем, что числитель - активное поле
+
         self.answer_div_line = QLabel("___________")  # дробная черта
         self.answer_div_line.setAlignment(Qt.AlignCenter)
+
         self.answer_den = QLineEdit()  # знаменатель
-        self.answer_num.setAlignment(Qt.AlignCenter)
-        self.answer_den.setAlignment(Qt.AlignCenter)
-        self.answer_num.setPlaceholderText("Числитель")
         self.answer_den.setPlaceholderText("Знаменатель")
+        self.answer_den.setAlignment(Qt.AlignCenter)
+
+        # Подключаем события фокуса к полям ввода
+        self.answer_num.focusInEvent = self.make_focus_in_handler(self.answer_num)
+        self.answer_den.focusInEvent = self.make_focus_in_handler(self.answer_den)
 
         # Виртуальная клавиатура
         self.keyboard_layout = QGridLayout()
@@ -506,6 +515,21 @@ class Task2(BaseTask):
         self.submit_btn.clicked.connect(self.check_answer)
         self.next_btn.clicked.connect(self.reset_task)
 
+    def make_focus_in_handler(self, field):
+        """Возвращает функцию-обработчик для focusInEvent конкретного поля."""
+        def handler(event):
+            # Вызываем стандартный обработчик
+            super(QLineEdit, field).focusInEvent(event)
+            # Обновляем last_active_field
+            self.last_active_field = field
+        return handler
+
+    def append_to_active_input(self, char):
+        # Используем last_active_field для добавления символа
+        if self.last_active_field:
+            current_text = self.last_active_field.text()
+            self.last_active_field.setText(current_text + char)
+
     def setup_virtual_keyboard(self):
         buttons = [
             ['1', '2', '3'],
@@ -538,21 +562,6 @@ class Task2(BaseTask):
                 button_row.append(btn)
             self.keyboard_buttons.append(button_row)
 
-    def append_to_active_input(self, char, field):
-        current_text = field.text()
-        field.setText(current_text + char)
-
-    def append_to_active_input(self, char):
-        # Проверяем, какое поле активно (фокус)
-        if self.answer_num.hasFocus():
-            self.append_to_active_input_impl(char, self.answer_num)
-        elif self.answer_den.hasFocus():
-            self.append_to_active_input_impl(char, self.answer_den)
-
-    def append_to_active_input_impl(self, char, field):
-        current_text = field.text()
-        field.setText(current_text + char)
-
     def generate_task(self):
         # Генерация чисел
         b = random.randint(2, 8)
@@ -574,7 +583,8 @@ class Task2(BaseTask):
         </span>
         </div>
         """
-        self.label.setText(task_html)
+        # Вместо прямого setText — вызываем update_label_html
+        self.update_label_html()
 
         # Очистка полей
         self.answer_num.clear()
@@ -582,6 +592,25 @@ class Task2(BaseTask):
         self.result_label.clear()
         self.result_label.hide()
         self.next_btn.setVisible(False)
+        # Устанавливаем фокус на числитель при новом задании
+        self.answer_num.setFocus()
+        self.last_active_field = self.answer_num
+
+    def update_label_html(self):
+        """Пересоздаёт HTML-строку для self.label с учётом текущего text_scale."""
+        if not hasattr(self, 'a'):
+            # Если задача ещё не сгенерирована, ничего не делаем
+            return
+
+        # Формируем HTML с новым font-size
+        task_html = f"""
+        <div style="text-align: center;">
+        <span style="font-size: {int(60 * self.text_scale)}px;">
+        (<sup>{self.a}</sup>&frasl;<sub>{self.b}</sub> &minus; <sup>{self.c}</sup>&frasl;<sub>{self.d}</sub>) &divide; <sup>{self.e}</sup>&frasl;<sub>{self.f}</sub>
+        </span>
+        </div>
+        """
+        self.label.setText(task_html)
 
     def check_answer(self):
         try:
@@ -607,18 +636,20 @@ class Task2(BaseTask):
             if user_fraction == correct_result:
                 self.result_label.setText("Правильно!")
                 self.result_label.setStyleSheet(f"color: green; font-size: {int(60 * self.text_scale)}px;")
+                self.submit_btn.setEnabled(False)
             else:
                 self.result_label.setText(
                     f"Неправильно. Правильный ответ: {correct_result.numerator}/{correct_result.denominator}"
                 )
                 self.result_label.setStyleSheet(f"color: red; font-size: {int(60 * self.text_scale)}px;")
+                self.submit_btn.setEnabled(False)
 
         except ValueError:
             self.result_label.setText("Введите числа в оба поля.")
             self.result_label.setStyleSheet(f"color: orange; font-size: {int(60 * self.text_scale)}px;")
 
         self.result_label.show()
-        self.submit_btn.setEnabled(False)
+        #self.submit_btn.setEnabled(False)
         self.next_btn.setVisible(True)
 
     def reset_task(self):
@@ -715,6 +746,7 @@ class Task2(BaseTask):
             }}
         """)
         self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
+        self.update_label_html() 
 
     def apply_ui_scaling(self, scale):
         self.ui_scale = scale
@@ -2295,8 +2327,10 @@ class Task7(BaseTask):
         </span>
         </div>
         """
-
         self.label.setText(task_html)
+
+        self.update_label_html()  # ← Используем новый метод
+
 
         # Очистка
         self.input_field.clear()
@@ -2340,6 +2374,21 @@ class Task7(BaseTask):
         self.result_label.hide()
         self.input_field.clear()
         self.generate_task()
+    
+    def update_label_html(self):
+        """Пересоздаёт HTML-строку для self.label с учётом текущего text_scale."""
+        if not hasattr(self, 'frac_b'):
+            # Если задача ещё не сгенерирована, ничего не делаем
+            return
+
+        task_html = f"""
+        <div style="text-align: center;">
+        <span style="font-size: {int(60 * self.text_scale)}px;">
+        1<sup>{self.frac_b.numerator}</sup>&frasl;<sub>{self.frac_b.denominator}</sub> &times; (<sup>{self.frac_v.numerator}</sup>&frasl;<sub>{self.frac_v.denominator}</sub> + <sup>{self.frac_g.numerator}</sup>&frasl;<sub>{self.frac_g.denominator}</sub>) &minus; <sup>{self.frac_d.numerator}</sup>&frasl;<sub>{self.frac_d.denominator}</sub> &divide; {self.e}
+        </span>
+        </div>
+        """
+        self.label.setText(task_html)
 
     def apply_text_scaling(self, scale):
         self.text_scale = scale
@@ -2413,6 +2462,7 @@ class Task7(BaseTask):
         }}
         """)
         self.result_label.setStyleSheet(f"font-size: {int(60 * self.text_scale)}px;")
+        self.update_label_html()
 
     def apply_ui_scaling(self, scale):
         self.ui_scale = scale
